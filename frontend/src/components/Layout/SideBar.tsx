@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '../Context/AuthContext'; // Importar contexto
 import { Icons } from '../UI/Icons';
+import { useConfig } from '../Admin/ConfigContext';
+
 interface Props {
     activeTab: string;
     onTabChange: (tab: string) => void;
@@ -9,6 +11,7 @@ interface Props {
 export const Sidebar: React.FC<Props> = ({ activeTab, onTabChange }) => {
     const { user, logout } = useAuth(); // Usar datos reales
 
+    const { appName } = useConfig();
     const menuItems = [
         { id: 'nueva-venta', label: 'Nueva Venta', icon: Icons.Cart },
         { id: 'stock', label: 'Stock / Inventario', icon: Icons.Box },
@@ -19,7 +22,7 @@ export const Sidebar: React.FC<Props> = ({ activeTab, onTabChange }) => {
         <aside className="w-64 bg-slate-900 text-white flex flex-col h-screen shadow-2xl relative z-20">
             {/* Logo */}
             <div className="flex items-center justify-between p-6 border-b border-slate-700">
-                <h1 className="text-2xl font-bold tracking-tighter text-blue-400">I<span className="text-white">Cloud</span></h1>
+                <h1 className="text-2xl font-bold tracking-tighter text-blue-400">{appName}</h1>
                 {/* <Icons.Apple className="w-8 h-8"/> */}
             </div>
 

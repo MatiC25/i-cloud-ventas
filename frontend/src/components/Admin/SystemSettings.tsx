@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { updateSystemConfig } from '../../services/api';
+import React, { useState, useEffect } from 'react';  
+import { useConfig } from '../Admin/ConfigContext';
+import { checkSpreadsheetIntegrity, updateSystemConfig } from '../../services/api';
 
 type TabType = 'general' | 'interface' | 'advanced';
 
@@ -34,9 +35,9 @@ const Icons = {
 
 export const SystemSettings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('general');
-    
+    const { appName, updateAppName } = useConfig();
     // Estados General
-    const [companyName, setCompanyName] = useState('iCloud');
+    const [companyName, setCompanyName] = useState(appName);
     const [contactEmail, setContactEmail] = useState('admin@sistema.com');
     const [statusGeneral, setStatusGeneral] = useState<'idle' | 'saving' | 'success'>('idle');
 
@@ -51,6 +52,7 @@ export const SystemSettings: React.FC = () => {
             // AQUÍ LLAMARÍAMOS A TU API PARA GUARDAR EL NOMBRE
             // await updateSystemConfig({ companyName, contactEmail }); 
             // Por ahora simulamos éxito visual
+            updateAppName(companyName);
             setTimeout(() => setStatusGeneral('success'), 1000);
             setTimeout(() => setStatusGeneral('idle'), 3000);
         } catch (e) {
@@ -60,14 +62,44 @@ export const SystemSettings: React.FC = () => {
 
     // Manejador: Guardar ID Sheet
     const handleConfigUpdate = async () => {
-        if(!sheetId) return;
-        setStatusAdvanced('loading');
-        try {
-            await updateSystemConfig(sheetId);
-            setStatusAdvanced('success');
-        } catch (e) {
+    if (!sheetId) return; // sheetId es el estado del input
+    setStatusAdvanced('loading');
+
+    try {
+        console.log("1. Iniciando verificación de integridad para ID:", sheetId);
+        
+        // A. LLAMADA DE VERIFICACIÓN
+        const checkResult = await checkSpreadsheetIntegrity(sheetId);
+        console.log("Resultado verificación:", checkResult);
+
+        if (checkResult.status === 'error') {
+            alert(`Error de conexión:\n${checkResult.message}`);
             setStatusAdvanced('error');
+            return;
         }
+
+        // B. SI HUBO CAMBIOS (Instalación automática)
+        if (checkResult.changes && checkResult.changes.length > 0) {
+            alert(`✅ INSTALACIÓN AUTOMÁTICA COMPLETADA\n\nEl sistema detectó una hoja nueva y creó la estructura necesaria:\n\n${checkResult.changes.join('\n')}`);
+        } else {
+            // Si no hubo cambios, es que ya estaba bien
+            console.log("La hoja ya tenía la estructura correcta.");
+        }
+
+        // C. GUARDAR EL ID (Persistencia)
+        await updateSystemConfig(sheetId);
+        
+        // (Opcional) Si usas el ConfigContext para guardar el ID en localStorage también:
+        // updateSheetId(sheetId); 
+
+        setStatusAdvanced('success');
+        alert("¡Conexión establecida y guardada exitosamente!");
+
+    } catch (e: any) {
+        console.error("Error en el proceso:", e);
+        alert("Error crítico: " + e.message);
+        setStatusAdvanced('error');
+    }
     };
 
     const TabButton = ({ id, label, icon: Icon }: { id: TabType, label: string, icon: React.FC<any> }) => (

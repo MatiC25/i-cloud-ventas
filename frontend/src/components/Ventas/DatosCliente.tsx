@@ -6,15 +6,16 @@ import { IVenta } from '../../types';
 interface Props {
   data: IVenta['cliente'];
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  errors?: Record<string, string>;
 }
 
-export const DatosCliente: React.FC<Props> = ({ data, onChange }) => {
+export const DatosCliente: React.FC<Props> = ({ data, onChange, errors }) => {
   return (
     <div className="space-y-6">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Datos del Cliente</h3>
+      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1 border-b pb-2">Datos del Cliente</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormInput label="Nombre" name="nombre" value={data.nombre} onChange={onChange} required placeholder="Nombre" />
-        <FormInput label="Apellido" name="apellido" value={data.apellido} onChange={onChange} placeholder="Apellido" />
+        <FormInput label="Nombre" name="nombre" value={data.nombre} onChange={onChange} required placeholder="Nombre" error={errors?.['cliente.nombre']} />
+        <FormInput label="Apellido" name="apellido" value={data.apellido} onChange={onChange} placeholder="Apellido" error={errors?.['cliente.apellido']} />
         <FormInput label="Email" name="email" type="email" value={data.email} onChange={onChange} required placeholder="mail@ejemplo.com" />
         <FormInput label="Contacto" name="contacto" value={data.contacto} onChange={onChange} placeholder="Número de teléfono" />
         

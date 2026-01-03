@@ -10,10 +10,11 @@ interface Props {
   onChange: (e: any) => void;
   options: IProductConfig[];
   active: boolean;          // Para saber si mostramos los campos o no
-  onToggle: () => void;     // Para activar/desactivar el trade-in
+  onToggle: () => void; 
+  errors?: Record<string, string>;
 }
 
-export const DatosPartePago: React.FC<Props> = ({ data, onChange, options, active, onToggle }) => {
+export const DatosPartePago: React.FC<Props> = ({ data, onChange, options, active, onToggle, errors }) => {
   
   // Reutilizamos la lógica inteligente de categorías del Excel
   const categorias = useMemo(() => {
@@ -74,10 +75,11 @@ export const DatosPartePago: React.FC<Props> = ({ data, onChange, options, activ
                   <FormInput 
                     label="Cotización (Valor de toma)" 
                     name="costo" 
-                    type="number" // Ahora sin flechitas molestas
+                    type="number" 
                     value={data.costo} 
                     onChange={onChange} 
                     placeholder="0.00"
+                    error={errors?.['parteDePago.costo']}
                   />
               </div>
           </div>

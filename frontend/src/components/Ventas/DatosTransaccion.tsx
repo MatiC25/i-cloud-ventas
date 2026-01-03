@@ -6,12 +6,13 @@ import { IVenta } from '../../types';
 interface Props {
   data: IVenta['transaccion'];
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  errors?: Record<string, string>;
 }
 
-export const DatosTransaccion: React.FC<Props> = ({ data, onChange }) => {
+export const DatosTransaccion: React.FC<Props> = ({ data, onChange, errors }) => {
   return (
     <div className="space-y-6">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Transacción</h3>
+      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1 border-b pb-2">Transacción</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         <FormInput 
@@ -22,6 +23,7 @@ export const DatosTransaccion: React.FC<Props> = ({ data, onChange }) => {
             onChange={onChange} 
             required 
             placeholder="0.00" 
+            error={errors?.['transaccion.monto']}
         />
 
         <div className="grid grid-cols-2 gap-4">

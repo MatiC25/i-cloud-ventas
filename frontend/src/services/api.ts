@@ -114,8 +114,8 @@ export const updateSystemConfig = async (newSpreadsheetId: string) => {
     const response = await fetch(URL, {
         method: 'POST',
         body: JSON.stringify({
-            action: 'config_sys',
-            payload: { spreadsheetId: newSpreadsheetId }
+            action: 'save_config',
+            payload: { sheetId: newSpreadsheetId }
         })
     });
     return await response.json();
@@ -140,3 +140,22 @@ export const loginWithGoogleSheet = async (email: string, password: string) => {
         throw new Error(json.message || "Error al iniciar sesión");
     }
 };
+
+export const checkSpreadsheetIntegrity = async (sheetId: string) => {
+    const URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL; 
+
+    try {
+        const response = await fetch(URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: 'check_integrity', 
+                sheetId: sheetId // Enviamos el ID en la raíz del objeto
+            })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error en checkSpreadsheetIntegrity:', error);
+        throw error;
+    }
+};
+

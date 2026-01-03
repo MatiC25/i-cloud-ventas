@@ -1,76 +1,46 @@
-class VentaRepository {
+class VentaRepository extends GenericRepository {
   constructor() {
-    this.spreadsheetId = "1gk8Miut5Wt5uv_HkZG4pSL3yAJYPMOrz0YFOrRRBhPo"; 
-    this.sheetName = "Clientes Minoristas";
-    
-    this.COLUMN_MAP = {
-      "fecha": "Fecha",
-      "mes": "Mes",
-      "id": "N° ID",
-      "nombreCompleto": "Nombre y Apellido",
-      "canal": "Canal",
-      "contacto": "Contacto",
-      "email": "Mail",
-      "cantidad": "Cantidad",
-      "tipoProducto": "Equipo | Producto",
-      "modelo": "Modelo",
-      "capacidad": "Tamaño",
-      "color": "Color",
-      "estado": "Estado",
-      "imei": "IMEI | Serial",
-      "envioRetiro": "Envio | Retiro",
-      "monto": "Monto",
-      "divisa": "Divisa",
-      "ppTipo": "Equipo en parte de pago",
-      "ppModelo": "Modelo del equipo",
-      "ppCapacidad": "Capacidad",
-      "ppImei": "IMEI",
-      "ppCosto": "Costo del Equipo en Parte de pago",
-      "tipoCambio": "Tipo de Cambio",
-      "conversion": "Conversión $ARS - USD",
-      "costoProducto": "Costo del Producto",
-      "profit": "Profit Bruto",
-      "comentarios": "Comentarios"
-    };
+    // YA NO necesitamos hardcodear el ID ni el MAP.
+    // Usamos las constantes globales.
+    super(SHEET.CLIENTES_MINORISTAS);
   }
 
-  save(dataObject) {
-    const ss = SpreadsheetApp.openById(this.spreadsheetId);
-    const sheet = ss.getSheetByName(this.sheetName);
+  // /**
+  //  * Recibe un objeto donde las Keys son EXACTAMENTE los headers del Excel
+  //  * Ejemplo: { "Nombre y Apellido": "Juan", "Monto": 100 }
+  //  */
+  // save(datosExcel) {
+  //   // 1. Usamos el helper getDB() que ya maneja la configuración dinámica
+  //   const ss = getDB(); 
+  //   const sheet = ss.getSheetByName(this.sheetName);
 
+  //   console.log(`Guardando en: ${ss.getName()} > ${this.sheetName}`);
 
-    console.log("Entramos al save");
-    console.log("Spreadsheet: " + ss.getName());
-    console.log("Sheet: " + sheet.getName());
+  //   if (!sheet) throw new Error(`Error Crítico: No existe la hoja '${this.sheetName}'`);
 
-
-    if (!sheet) throw new Error(`No se encontró la hoja '${this.sheetName}'`);
-
-    // 1. Leemos los encabezados REALES que tiene el Excel AHORA
-    // (Esto hace que no importe el orden de las columnas)
-    const lastCol = sheet.getLastColumn();
-    if (lastCol === 0) throw new Error("La hoja está vacía (sin cabeceras).");
+  //   // 2. Leemos los encabezados REALES de la hoja
+  //   const lastCol = sheet.getLastColumn();
+  //   if (lastCol === 0) throw new Error("La hoja está vacía. Ejecuta la verificación de integridad.");
     
-    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  //   // Obtenemos fila 1: ["Fecha", "Mes", "N° ID", ...]
+  //   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
     
-    // 2. Preparamos la fila nueva
-    const newRow = new Array(headers.length).fill(""); // Fila vacía
-    
-    // 3. Rellenamos dinámicamente
-    headers.forEach((headerExcel, index) => {
-      const headerLimpio = headerExcel.toString().trim();
+  //   // 3. Mapeo Dinámico (El corazón del sistema)
+  //   // Creamos un array vacío del tamaño de las columnas existentes
+  //   const newRow = headers.map(header => {
+  //     // Limpiamos el header del Excel (trim) para evitar errores por espacios
+  //     const headerName = header.toString().trim();
       
-      // Buscamos qué clave de nuestro código corresponde a esta columna de Excel
-      // (Buscamos la Key cuya Value coincida con el headerExcel)
-      const keyCodigo = Object.keys(this.COLUMN_MAP).find(key => this.COLUMN_MAP[key] === headerLimpio);
+  //     // Buscamos si nuestro objeto datosExcel tiene un valor para este header
+  //     const valor = datosExcel[headerName];
       
-      // Si encontramos mapeo Y tenemos dato para esa clave...
-      if (keyCodigo && dataObject[keyCodigo] !== undefined) {
-        newRow[index] = dataObject[keyCodigo];
-      }
-    });
+  //     // Devolvemos el valor o string vacío si no existe
+  //     return valor !== undefined ? valor : "";
+  //   });
 
-    // 4. Guardamos
-    sheet.appendRow(newRow);
-  }
+  //   // 4. Guardamos
+  //   sheet.appendRow(newRow);
+    
+  //   console.log("Fila guardada exitosamente.");
+  // }
 }

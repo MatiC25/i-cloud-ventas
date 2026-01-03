@@ -1,5 +1,30 @@
 /**
  * ==========================================
+ * CONFIGURACIÓN MAESTRA (SCHEMA DINÁMICO)
+ * ==========================================
+ */
+const DB_SCHEMA = {
+  // 1. Obtenemos las columnas DIRECTAMENTE de la clase VentaMapper
+  "Clientes Minoristas": VentaMapper.getHeaders(),
+  
+  // 2. Obtenemos las columnas de StockMapper
+  //"Stock": StockMapper.getHeaders(),
+  
+  // 3. Estas tablas no tienen Mapper aun, las dejamos fijas
+  "Config": [
+    "Categoria", "Modelo", "Variantes", "Colores"
+  ],
+  "Usuarios": [
+    "Email", "Password", "Nombre", "Rol"
+  ],
+  "_LOGS": [
+    "Fecha", "Estado", "Mensaje"
+  ]
+};
+
+
+/**
+ * ==========================================
  * 1. PUNTOS DE ENTRADA (CONTROLLERS)
  * ==========================================
  */
@@ -9,7 +34,12 @@
  * Intenta obtener el ID desde la configuración guardada.
  * Si no existe, usa la hoja activa (si el script está vinculado).
  */
-function getDB() {
+function getDB(idOverride) {
+
+  if (idOverride) {
+    return SpreadsheetApp.openById(idOverride);
+  }
+
   const scriptProperties = PropertiesService.getScriptProperties();
   const storedId = scriptProperties.getProperty('SPREADSHEET_ID');
 
@@ -64,11 +94,18 @@ function doPost(e) {
     if (!e || !e.postData) {
       throw new Error("No se recibieron datos (Body vacío).");
     }
+
     
     const request = JSON.parse(e.postData.contents);
     const action = request.action;   
     const payload = request.payload; 
-
+    
+    
+    if (action === "check_integrity") {
+      const result = serviceCheckIntegrity(request.sheetId); 
+      return buildResponse("success", result);
+    }
+    
     let result = {};
 
     switch (action) {
@@ -76,7 +113,7 @@ function doPost(e) {
         result = serviceCrearVenta(payload);
         break;
         
-      case "addProduct": // <--- NUEVO CASO AGREGADO
+      case "addProduct": 
         result = serviceAddProduct(payload);
         break;
 
@@ -90,6 +127,10 @@ function doPost(e) {
 
       case "login":
         result = serviceLogin(payload);
+        break;
+
+      case "save_config":
+        result = serviceSaveConfig(payload);
         break;
     
       default:
@@ -114,32 +155,26 @@ function doPost(e) {
  */
 
 function serviceCrearVenta(payload) {
-  // Tu lógica existente que funciona bien
-  const repo = new VentaRepository();
-  const datosLimpios = VentaMapper.toDto(payload);
-  repo.save(datosLimpios);
-
-  return {
-    message: "Venta registrada correctamente",
-    id_generado: datosLimpios.id_generado
-  };
+  // Instanciamos el servicio
+  const servicio = new VentaService();
+  
+  // Delegamos todo el trabajo
+  return servicio.registrarVenta(payload);
 }
 
-// --- NUEVO: LEER CONFIGURACIÓN (Para llenar los Selects) ---
 function serviceGetOptions() {
   const ss = getDB();
   const sheet = ss.getSheetByName("Config");
-  
-  if (!sheet) return []; // Si no existe la hoja, devolvemos vacío
+  if (!sheet) return [];
 
   const rows = sheet.getDataRange().getValues();
-  rows.shift(); // Eliminamos la fila de cabeceras
+  rows.shift(); // Sacar headers
 
-  // Transformamos las filas de Excel en objetos JSON limpios
   const productos = rows.map(r => ({
-    categoria: r[0],
-    modelo: r[1],
-    // Convertimos "128GB, 256GB" en arrays ["128GB", "256GB"]
+    // AGREGAMOS .toString().trim() AQUÍ PARA EVITAR ERRORES DE ESPACIOS
+    categoria: r[0] ? r[0].toString().trim() : "",
+    modelo: r[1] ? r[1].toString().trim() : "",
+    
     variantes: r[2] ? r[2].toString().split(',').map(s => s.trim()) : [],
     colores: r[3] ? r[3].toString().split(',').map(s => s.trim()) : []
   }));
@@ -245,6 +280,70 @@ function serviceLogin(payload) {
   } else {
     throw new Error("Credenciales incorrectas");
   }
+}
+
+function serviceCheckIntegrity(sheetId) {
+  const ss = getDB(sheetId); // Abrimos el Excel específico
+  const log = [];
+
+  // Iteramos sobre nuestro SCHEMA maestro
+  for (const tabName in DB_SCHEMA) {
+    const requiredCols = DB_SCHEMA[tabName];
+    let sheet = ss.getSheetByName(tabName);
+
+    // CASO 1: La hoja no existe -> CREAR
+    if (!sheet) {
+      sheet = ss.insertSheet(tabName);
+      sheet.appendRow(requiredCols);
+      
+      // Estilos
+      sheet.setFrozenRows(1);
+      sheet.getRange(1, 1, 1, requiredCols.length).setFontWeight("bold");
+      
+      log.push(`✅ Creada hoja: ${tabName}`);
+    } 
+    
+    // CASO 2: La hoja existe -> REVISAR COLUMNAS
+    else {
+      const lastCol = sheet.getLastColumn();
+      let currentHeaders = [];
+
+      if (lastCol > 0) {
+        currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      }
+
+      // Convertimos a String y trim por seguridad
+      const normalizedCurrent = currentHeaders.map(h => h.toString().trim());
+      
+      const missingCols = [];
+      requiredCols.forEach(col => {
+        if (!normalizedCurrent.includes(col)) {
+          missingCols.push(col);
+        }
+      });
+
+      if (missingCols.length > 0) {
+        // Agregamos al final
+        const startCol = (lastCol === 0) ? 1 : lastCol + 1;
+        sheet.getRange(1, startCol, 1, missingCols.length).setValues([missingCols]);
+        sheet.getRange(1, startCol, 1, missingCols.length).setFontWeight("bold");
+        
+        log.push(`⚠️ En '${tabName}' se agregaron: ${missingCols.join(", ")}`);
+      }
+    }
+  }
+
+  return {
+    status: "success",
+    changes: log,
+    message: log.length > 0 ? log.join("\n") : "Estructura correcta."
+  };
+}
+
+function serviceSaveConfig(payload) {
+  const newId = payload.sheetId;
+  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', newId);
+  return { message: "Configuración guardada. El sistema ahora apunta al nuevo Excel." };
 }
 
 /**

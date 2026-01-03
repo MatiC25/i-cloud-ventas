@@ -1,5 +1,16 @@
 class StockMapper {
  
+    static getHeaders() {
+        return [
+            "Modelo",
+            "Tamaño",
+            "Color",
+            "Precio",
+            "Estado",
+            "Cantidad"
+        ];
+    }
+
     static toExcel(dto){
     
         return {

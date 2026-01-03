@@ -1,133 +1,155 @@
-/**
- * Clase encargada de traducir DTOs
- * a Entidades de Excel
- */
-
 class VentaMapper {
-    /**
-     * Convierte el DTO de venta a un objeto con nombres de columnas
-     * @param {Object} dto - Datos que vienen del frontend
-     * @returns {Object} - Objeto { "Header Excel": "Valor"}
-     */
-    static toExcel(dto){
-     
-        const fechaHoy = new Date();
-        const id_operacion = IdGenerator.getNextId("Clientes Minoristas", "N° ID");
-        const montoVenta = Number(dto.transaccion.monto) || 0;
-        const costoProd = Number(dto.producto.costo) || 0;
-        const tipoCambio = Number(dto.transaccion.tipoCambio) || 1;
 
-        // Cálculo de conversión (Si vendes en ARS, cuánto es en USD)
-        let conversion = 0;
-        if (dto.transaccion.divisa === "ARS" && tipoCambio > 0) {
-            conversion = montoVenta / tipoCambio;
-        } else {
-            conversion = montoVenta; // Si ya es USD
-        }
+    /**
+     * FUENTE DE VERDAD: Define las columnas y su orden exacto.
+     */
+    static getHeaders() {
+        return [
+            "Fecha",
+            "Mes",
+            "N° ID",
+            // --- CLIENTE ---
+            "Nombre y Apellido",
+            "Canal",
+            "Contacto",
+            "Mail",
+            // --- PRODUCTO ---
+            "Cantidad",
+            "Equipo | Producto",
+            "Modelo",
+            "Tamaño",
+            "Color",
+            "Estado",
+            "IMEI | Serial",
+            // --- TRANSACCIÓN ---
+            "Envio | Retiro",
+            "Monto",
+            "Divisa",
+            // --- PARTE DE PAGO ---
+            "Equipo en parte de pago",
+            "Modelo del equipo",
+            "Capacidad",
+            "IMEI",
+            "Costo del Equipo en Parte de pago",
+            "Tipo de Cambio",
+            "Conversión $ARS - USD",
+            // --- RESULTADOS FINANCIEROS ---
+            "Costo del Producto",
+            "Profit Bruto",
+            "Comentarios"
+        ];
+    }
+
+    /**
+     * Convierte el DTO Interno (ya procesado) a formato Excel.
+     * @param {Object} dto - Objeto plano que devuelve toDto()
+     */
+    static toExcel(dto) {
+        // Formateo de fechas
+        const fechaObj = new Date(dto.fecha); // Aseguramos que sea objeto Date
 
         return {
-        "Fecha": fechaHoy,
-        "Mes": fechaHoy.getMonth() + 1, // getMonth devuelve 0-11, sumamos 1
-        "N° ID": id_operacion,
-        
-        // --- CLIENTE ---
-        "Nombre y Apellido": `${dto.cliente.nombre} ${dto.cliente.apellido}`.trim(),
-        "Canal": dto.cliente.canal,
-        "Contacto": dto.cliente.contacto,
-        "Mail": dto.cliente.email,
+            "Fecha": fechaObj,
+            "Mes": dto.mes,
+            "N° ID": dto.id, // Usamos el ID que ya generó toDto
 
-        // --- PRODUCTO ---
-        "Cantidad": dto.producto.cantidad,
-        "Equipo | Producto": dto.producto.tipo,
-        "Modelo": dto.producto.modelo,
-        "Tamaño": dto.producto.capacidad,
-        "Color": dto.producto.color,
-        "Estado": dto.producto.estado,
-        "IMEI | Serial": dto.producto.imei,
-        
-        // --- TRANSACCIÓN ---
-        "Envio | Retiro": dto.transaccion.envioRetiro,
-        "Monto": montoVenta,
-        "Divisa": dto.transaccion.divisa,
+            // --- CLIENTE ---
+            "Nombre y Apellido": dto.nombreCompleto,
+            "Canal": dto.canal,
+            "Contacto": dto.contacto,
+            "Mail": dto.email,
 
+            // --- PRODUCTO ---
+            "Cantidad": dto.cantidad,
+            "Equipo | Producto": dto.tipoProducto,
+            "Modelo": dto.modelo,
+            "Tamaño": dto.capacidad,
+            "Color": dto.color,
+            "Estado": dto.estado,
+            "IMEI | Serial": dto.imei,
+            
+            // --- TRANSACCIÓN ---
+            "Envio | Retiro": dto.envioRetiro,
+            "Monto": dto.monto,
+            "Divisa": dto.divisa,
+            
+            // --- PARTE DE PAGO ---
+            "Equipo en parte de pago": dto.ppTipo || "",
+            "Modelo del equipo": dto.ppModelo || "",
+            "Capacidad": dto.ppCapacidad || "",
+            "IMEI": dto.ppImei || "",
+            "Costo del Equipo en Parte de pago": dto.ppCosto || 0,
+            "Tipo de Cambio": dto.tipoCambio || "",
+            "Conversión $ARS - USD": dto.conversion || "",
 
-        
-        // --- PARTE DE PAGO (Solo si aplica) ---
-        "Equipo en parte de pago": dto.parteDePago.esParteDePago ? dto.parteDePago.tipo : "",
-        "Modelo del equipo": dto.parteDePago.esParteDePago ? dto.parteDePago.modelo : "",
-        "Capacidad": dto.parteDePago.esParteDePago ? dto.parteDePago.capacidad : "",
-        "IMEI": dto.parteDePago.esParteDePago ? dto.parteDePago.imei : "",
-        "Costo del Equipo en Parte de pago": dto.parteDePago.esParteDePago ? dto.parteDePago.costo : 0,
-        "Tipo de Cambio": dto.parteDePago.esParteDePago ? tipoCambio : "",
-        "Conversión $ARS - USD": dto.parteDePago.esParteDePago ? conversion : "", 
-
-        // --- RESULTADOS FINANCIEROS ---
-        "Costo del Producto": costoProd,
-        "Profit Bruto": conversion - costoProd, 
-        "Comentarios": dto.transaccion.comentarios
+            // --- RESULTADOS FINANCIEROS ---
+            "Costo del Producto": dto.costoProducto || 0,
+            "Profit Bruto": dto.profit || 0,
+            "Comentarios": dto.comentarios || ""
         };
     }
 
-    static toDto(dto) {
+    /**
+     * Recibe el JSON crudo del Frontend y crea el DTO Interno.
+     * Aquí es donde se calcula el ID y se aplanan los datos.
+     */
+    static toDto(raw) {
         var fechaHoy = new Date();
         
-        // Generamos ID (Asegúrate de que IdGenerator use openById también)
-        // Nota: Pasamos el nombre de la hoja donde se guardará
-        var id_operacion = IdGenerator.getNextId("Clientes Minoristas", "N° ID"); 
+        // Generamos ID
+        var id_operacion = IdGenerator.getNextId(SHEET.CLIENTES_MINORISTAS, "N° ID"); 
         
-        var montoVenta = Number(dto.transaccion.monto) || 0;
-        var costoProd = Number(dto.producto.costo) || 0;
-        var tipoCambio = Number(dto.transaccion.tipoCambio) || 1;
+        var montoVenta = Number(raw.transaccion.monto) || 0;
+        var costoProd = Number(raw.producto.costo) || 0;
+        var tipoCambio = Number(raw.transaccion.tipoCambio) || 1;
 
         // Lógica de conversión
         var conversion = 0;
-        if (dto.transaccion.divisa === "ARS" && tipoCambio > 0) {
+        if (raw.transaccion.divisa === "ARS" && tipoCambio > 0) {
             conversion = montoVenta / tipoCambio;
         } else {
             conversion = montoVenta;
         }
 
-        // RETORNAMOS UN OBJETO LIMPIO (Internal DTO)
-        // Las claves aquí son para TU uso interno en el código, no para el Excel.
+        // RETORNAMOS UN OBJETO PLANO
         return {
-        id: id_operacion,
-        fecha: fechaHoy,
-        mes: fechaHoy.getMonth() + 1,
-        
-        // Cliente
-        nombreCompleto: (dto.cliente.nombre + " " + dto.cliente.apellido).trim(),
-        canal: dto.cliente.canal,
-        contacto: dto.cliente.contacto,
-        email: dto.cliente.email,
+            id: id_operacion,
+            fecha: fechaHoy,
+            mes: fechaHoy.getMonth() + 1,
+            
+            // Cliente
+            nombreCompleto: (raw.cliente.nombre + " " + raw.cliente.apellido).trim(),
+            canal: raw.cliente.canal,
+            contacto: raw.cliente.contacto,
+            email: raw.cliente.email,
 
-        // Producto
-        cantidad: dto.producto.cantidad,
-        tipoProducto: dto.producto.tipo,
-        modelo: dto.producto.modelo,
-        capacidad: dto.producto.capacidad,
-        color: dto.producto.color,
-        estado: dto.producto.estado,
-        imei: dto.producto.imei,
-        
-        // Transacción
-        envioRetiro: dto.transaccion.envioRetiro,
-        monto: montoVenta,
-        divisa: dto.transaccion.divisa,
-        
-        // Parte de Pago
-        esPartePago: dto.parteDePago.esParteDePago, // Flag útil
-        ppTipo: dto.parteDePago.esParteDePago ? dto.parteDePago.tipo : "",
-        ppModelo: dto.parteDePago.esParteDePago ? dto.parteDePago.modelo : "",
-        ppCapacidad: dto.parteDePago.esParteDePago ? dto.parteDePago.capacidad : "",
-        ppImei: dto.parteDePago.esParteDePago ? dto.parteDePago.imei : "",
-        ppCosto: dto.parteDePago.esParteDePago ? dto.parteDePago.costo : 0,
-        
-        // Financiero
-        tipoCambio: tipoCambio,
-        conversion: dto.parteDePago.esParteDePago ? conversion : "", // Ojo con esta lógica de negocio
-        costoProducto: costoProd,
-        profit: conversion - costoProd,
-        comentarios: dto.transaccion.comentarios
+            // Producto
+            cantidad: raw.producto.cantidad || 1,
+            tipoProducto: raw.producto.tipo,
+            modelo: raw.producto.modelo,
+            capacidad: raw.producto.capacidad,
+            color: raw.producto.color,
+            estado: raw.producto.estado,
+            imei: raw.producto.imei,
+            
+            // Transacción
+            envioRetiro: raw.transaccion.envioRetiro,
+            monto: montoVenta,
+            divisa: raw.transaccion.divisa,
+            
+            // Parte de Pago
+            ppTipo: raw.parteDePago.esParteDePago ? raw.parteDePago.tipo : "",
+            ppModelo: raw.parteDePago.esParteDePago ? raw.parteDePago.modelo : "",
+            ppCapacidad: raw.parteDePago.esParteDePago ? raw.parteDePago.capacidad : "",
+            ppImei: raw.parteDePago.esParteDePago ? raw.parteDePago.imei : "",
+            ppCosto: raw.parteDePago.esParteDePago ? raw.parteDePago.costo : 0,
+            
+            // Financiero
+            tipoCambio: tipoCambio,
+            conversion: raw.parteDePago.esParteDePago ? conversion : "", 
+            costoProducto: costoProd,
+            profit: conversion - costoProd,
+            comentarios: raw.transaccion.comentarios
         };
     }
 }

@@ -9,6 +9,7 @@ import { DatosTransaccion } from './DatosTransaccion';
 import { DatosPartePago } from './DatosPartePago';
 import { useAuth } from '../Context/AuthContext'; 
 import { Icons } from '../UI/Icons';
+import { generarPDFVenta } from '../../utils/pdfGenerator';
 
 const INITIAL_STATE: IVenta = {
     cliente: { nombre: '', apellido: '', email: '', canal: 'Local', contacto: '' },
@@ -63,10 +64,11 @@ const NuevaVenta: React.FC = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'wizard'>('grid');
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     
     // Estados de UI
-    const [showModal, setShowModal] = useState(false); // <--- NUEVO: Controla el modal
-    const [status, setStatus] = useState<'idle' | 'error'>('idle'); // Quitamos 'success' de aquí porque usaremos el modal
+    const [showModal, setShowModal] = useState(false); 
+    const [status, setStatus] = useState<'idle' | 'error'>('idle'); 
     const [msg, setMsg] = useState('');
     
     const [dbOptions, setDbOptions] = useState<IProductConfig[]>([]);
@@ -130,26 +132,43 @@ const NuevaVenta: React.FC = () => {
 
     // --- VALIDACIÓN ---
     const validateForm = (): boolean => {
-        const errors: string[] = [];
-        if (!formData.cliente.nombre.trim()) errors.push("Nombre del Cliente");
-        if (!formData.producto.tipo) errors.push("Categoría de Producto");
-        if (formData.transaccion.monto <= 0) errors.push("Precio de Venta");
+        const newErrors: Record<string, string> = {};
+        let isValid = true;
+
+        // Validación Cliente
+        if (!formData.cliente.nombre.trim()) newErrors['cliente.nombre'] = 'El nombre es obligatorio';
+        
+        // Validación Producto
+        if (!formData.producto.tipo) newErrors['producto.tipo'] = 'Selecciona una categoría';
+        
+        // Validación Transacción
+        if (formData.transaccion.monto <= 0) newErrors['transaccion.monto'] = 'El precio debe ser mayor a 0';
+
+        // if (formData.producto.costo <= 0) newErrors['producto.costo'] = 'El costo debe ser mayor a 0';
+
+        // Validación Trade-In
         if (formData.parteDePago.esParteDePago) {
-            if (!formData.parteDePago.tipo) errors.push("Tipo (Trade-In)");
-            if (!formData.parteDePago.modelo) errors.push("Modelo (Trade-In)");
-            if (formData.parteDePago.costo <= 0) errors.push("Cotización (Trade-In)");
+            if (!formData.parteDePago.tipo) newErrors['parteDePago.tipo'] = 'Tipo requerido';
+            if (!formData.parteDePago.modelo) newErrors['parteDePago.modelo'] = 'Modelo requerido';
+            if (formData.parteDePago.costo <= 0) newErrors['parteDePago.costo'] = 'Cotización requerida';
         }
 
-        if (errors.length > 0) {
+        setErrors(newErrors); 
+
+        if (Object.keys(newErrors).length > 0) {
             setStatus('error');
-            setMsg(`Faltan completar: ${errors.join(', ')}`);
+            setMsg('Por favor revisa los campos marcados en rojo.');
             setTimeout(() => setStatus('idle'), 5000);
             return false;
         }
+
         return true;
     };
 
     const handleSubmit = async () => {
+        // 1. Bloqueo inmediato si ya está cargando
+        if (loading) return;
+
         if (!validateForm()) return;
 
         setLoading(true);
@@ -162,6 +181,12 @@ const NuevaVenta: React.FC = () => {
             const response = await guardarVentaWithResponse(ventaFinal);
 
             if (response.status === 'success') {
+
+                if (configSalida.imprimirTicket) {
+                    const idOperacion = response.idOperacion;
+                    generarPDFVenta(formData, idOperacion);
+                }
+
                 // ÉXITO: Mostramos Modal y Limpiamos caché
                 setShowModal(true); 
                 sessionStorage.removeItem('sys_ventas_history');
@@ -187,17 +212,35 @@ const NuevaVenta: React.FC = () => {
     const descuentoTradeIn = formData.parteDePago.esParteDePago ? formData.parteDePago.costo : 0;
     const totalFinal = totalPagar - descuentoTradeIn;
 
-    // Estilos base para las tarjetas blancas
     const cardBase = "bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-fit";
 
-    // Componente Switch Visual
-    const ToggleSwitch = ({ label, active }: { label: string, active: boolean }) => (
-        <div className="flex items-center justify-between opacity-60 cursor-not-allowed group">
-            <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">{label}</span>
-            <div className={`w-9 h-5 rounded-full p-0.5 flex transition-colors ${active ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                <div className={`bg-white w-4 h-4 rounded-full shadow transform transition-transform ${active ? 'translate-x-4' : 'translate-x-0'}`}></div>
-            </div>
+    const ToggleSwitch = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
+    <div 
+        onClick={onClick} 
+        className="flex items-center justify-between cursor-pointer group py-2 select-none"
+    >
+        <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
+            {label}
+        </span>
+        <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${active ? 'bg-blue-600' : 'bg-gray-300'}`}>
+            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${active ? 'translate-x-6' : 'translate-x-0'}`}></div>
         </div>
+    </div>
+    );
+
+    const toggleConfig = (key: 'imprimirTicket' | 'enviarMail') => {
+    setConfigSalida(prev => ({
+        ...prev,
+        [key]: !prev[key]
+        }));
+    };
+
+    // --- COMPONENTE SPINNER PARA BOTONES ---
+    const LoadingSpinner = () => (
+        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
     );
 
     return (
@@ -216,30 +259,32 @@ const NuevaVenta: React.FC = () => {
                     {status === 'error' && <span className="bg-red-100 text-red-700 px-3 py-1 rounded-lg font-bold animate-bounce text-sm">⚠️ {msg}</span>}
                     
                     <button onClick={() => setViewMode(prev => prev === 'grid' ? 'wizard' : 'grid')} className="flex items-center gap-2 bg-white border px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors">
-                        <Icons.PrevNext className="w-4 h-4 text-gray-500" /> {/* Usa un icono de cambio/switch si tienes */}
+                        <Icons.PrevNext className="w-4 h-4 text-gray-500" />
                         {viewMode === 'grid' ? 'Ver Paso a Paso' : 'Ver Grilla'}
                     </button>
                 </div>
             </div>
 
             {viewMode === 'grid' ? (
-                // --- MODO GRID (Sin cambios, tu código ya estaba bien aquí) ---
+                // --- MODO GRID ---
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* ... (Todo el contenido del Grid que ya tenías) ... */}
                     {/* COLUMNA 1 */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className={cardBase}>
-                             <DatosCliente data={formData.cliente} onChange={updateCliente} />
+                             <DatosCliente 
+                             data={formData.cliente} 
+                             onChange={updateCliente} 
+                             errors={errors} />
                         </div>
                         <div className={cardBase}>
-                            <DatosTransaccion data={formData.transaccion} onChange={updateTransaccion} />
+                            <DatosTransaccion data={formData.transaccion} onChange={updateTransaccion} errors={errors} />
                         </div>
                     </div>
 
                     {/* COLUMNA 2 */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className={cardBase}>
-                            <DatosProducto data={formData.producto} onChange={updateProducto} options={dbOptions} />
+                            <DatosProducto data={formData.producto} onChange={updateProducto} options={dbOptions} errors={errors} />
                         </div>
                         <div className={cardBase}>
                             <DatosPartePago
@@ -248,6 +293,7 @@ const NuevaVenta: React.FC = () => {
                                 options={dbOptions}
                                 active={formData.parteDePago.esParteDePago}
                                 onToggle={togglePartePago}
+                                errors={errors}
                             />
                         </div>
                     </div>
@@ -257,8 +303,8 @@ const NuevaVenta: React.FC = () => {
                         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
                             <h3 className="text-xs font-bold uppercase text-gray-400">Configuración de Entrega</h3>
                             <div className="space-y-3">
-                                <ToggleSwitch label="🖨️ Imprimir Nota de Compra" active={configSalida.imprimirTicket} />
-                                <ToggleSwitch label="✉️ Enviar Confirmación por Email" active={configSalida.enviarMail} />
+                                <ToggleSwitch label="🖨️ Imprimir Nota de Compra" active={configSalida.imprimirTicket} onClick={() => toggleConfig('imprimirTicket')}/>
+                                <ToggleSwitch label="✉️ Enviar Confirmación por Email" active={configSalida.enviarMail} onClick={() => toggleConfig('enviarMail')}/>
                             </div>
                         </div>
 
@@ -305,17 +351,31 @@ const NuevaVenta: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={handleSubmit} disabled={loading} className={`w-full py-4 mt-8 rounded-xl font-bold text-base transition-all transform active:scale-[0.98] ${loading ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30'}`}>
-                                {loading ? 'Procesando...' : 'CONFIRMAR VENTA'}
+                            
+                            {/* BOTÓN GRID ACTUALIZADO */}
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={loading} 
+                                className={`w-full py-4 mt-8 rounded-xl font-bold text-base transition-all transform flex items-center justify-center 
+                                    ${loading 
+                                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 active:scale-[0.98]'
+                                    }`}
+                            >
+                                {loading ? (
+                                    <>
+                                        <LoadingSpinner />
+                                        <span>Procesando...</span>
+                                    </>
+                                ) : 'CONFIRMAR VENTA'}
                             </button>
                         </div>
                     </div>
                 </div>
 
             ) : (
-                // --- MODO WIZARD CORREGIDO ---
+                // --- MODO WIZARD ---
                 <div className="flex-1 flex justify-center items-start pt-4">
-                    {/* CAMBIO 1: Quitamos h-[650px] fijo y usamos min-h-[600px] para evitar el scroll innecesario */}
                     <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col min-h-[600px] max-h-[85vh]">
                         
                         {/* Pestañas Superiores */}
@@ -334,13 +394,13 @@ const NuevaVenta: React.FC = () => {
                         {/* Área de Contenido */}
                         <div className="flex-1 p-8 overflow-y-auto">
                             {currentStep === 2 ? (
-                                // CAMBIO 2: Pasamos las props correctas para que el toggle funcione
                                 <DatosPartePago
                                     data={formData.parteDePago}
                                     onChange={updatePartePago}
                                     options={dbOptions}
-                                    active={formData.parteDePago.esParteDePago} // <--- AHORA SÍ ES DINÁMICO
-                                    onToggle={togglePartePago} // <--- AHORA SÍ TIENE EL MANEJADOR
+                                    active={formData.parteDePago.esParteDePago} 
+                                    onToggle={togglePartePago} 
+                                    errors={errors}
                                 />
                             ) : (
                                 (() => {
@@ -359,11 +419,42 @@ const NuevaVenta: React.FC = () => {
 
                         {/* Footer de Botones */}
                         <div className="p-6 bg-gray-50 border-t flex justify-between rounded-b-2xl mt-auto">
-                            <button onClick={() => setCurrentStep(p => Math.max(0, p - 1))} disabled={currentStep === 0} className="px-6 py-3 bg-white border rounded-xl disabled:opacity-50 hover:bg-gray-100 transition-colors">Atrás</button>
+                            <button 
+                                onClick={() => setCurrentStep(p => Math.max(0, p - 1))} 
+                                disabled={currentStep === 0 || loading} 
+                                className="px-6 py-3 bg-white border rounded-xl disabled:opacity-50 hover:bg-gray-100 transition-colors"
+                            >
+                                Atrás
+                            </button>
+                            
                             {currentStep < STEPS.length - 1 ? (
-                                <button onClick={() => setCurrentStep(p => Math.min(STEPS.length - 1, p + 1))} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all">Siguiente</button>
+                                <button 
+                                    onClick={() => setCurrentStep(p => Math.min(STEPS.length - 1, p + 1))} 
+                                    disabled={loading}
+                                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all"
+                                >
+                                    Siguiente
+                                </button>
                             ) : (
-                                <button onClick={handleSubmit} className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-500 shadow-lg shadow-green-500/30 transition-all">Confirmar</button>
+                                // --- BOTÓN WIZARD ACTUALIZADO (ANTIMETRALLETA) ---
+                                <button 
+                                    onClick={handleSubmit} 
+                                    disabled={loading} 
+                                    className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2
+                                        ${loading 
+                                            ? 'bg-gray-400 cursor-not-allowed text-gray-100' 
+                                            : 'bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-500/30'
+                                        }`}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <LoadingSpinner />
+                                            <span>Procesando...</span>
+                                        </>
+                                    ) : (
+                                        <span>Confirmar</span>
+                                    )}
+                                </button>
                             )}
                         </div>
                     </div>

@@ -7,6 +7,7 @@ import { UltimasVentas } from './components/Ventas/UltimasVentas';
 import { Login } from './components/Context/Login';
 import { SystemSettings } from './components/Admin/SystemSettings';
 import { AuthProvider, useAuth } from './components/Context/AuthContext';
+import { ConfigProvider } from './components/Admin/ConfigContext';
 
 const AppContent: React.FC = () => {
     const { user, loading } = useAuth(); // <--- Aquí ya es seguro usarlo
@@ -55,9 +56,11 @@ const AppContent: React.FC = () => {
 // Este componente NO puede usar useAuth(), su única misión es envolver
 const App: React.FC = () => {
   return (
+    <ConfigProvider>
     <AuthProvider>
         <AppContent />
     </AuthProvider>
+    </ConfigProvider>
   );
 };
 

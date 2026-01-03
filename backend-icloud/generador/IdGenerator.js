@@ -7,7 +7,7 @@ class IdGenerator {
    * @returns {number} El siguiente ID
    */
   static getNextId(sheetName, idColumnName) {
-    const ss = SpreadsheetApp.openById("1gk8Miut5Wt5uv_HkZG4pSL3yAJYPMOrz0YFOrRRBhPo");
+    const ss = getDB();
     const sheet = ss.getSheetByName(sheetName);
     
     if (!sheet) throw new Error(`Hoja ${sheetName} no encontrada`);
