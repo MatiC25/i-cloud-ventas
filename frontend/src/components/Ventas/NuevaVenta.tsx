@@ -7,7 +7,7 @@ import { DatosCliente } from './DatosCliente';
 import { DatosProducto } from './DatosProducto';
 import { DatosTransaccion } from './DatosTransaccion';
 import { DatosPartePago } from './DatosPartePago';
-import { useAuth } from '../Context/AuthContext'; 
+import { useAuth } from '../Context/AuthContext';
 import { Icons } from '../UI/Icons';
 import { generarPDFVenta } from '../../utils/pdfGenerator';
 
@@ -27,10 +27,10 @@ interface IStep {
 }
 
 const STEPS: IStep[] = [
-    { id: 1, title: 'Cliente', component: DatosCliente, key: 'cliente' , icon: Icons.User },
-    { id: 2, title: 'Producto', component: DatosProducto, key: 'producto' , icon: Icons.Phone },
-    { id: 3, title: 'Trade-In', component: DatosPartePago, key: 'parteDePago' , icon: Icons.TradeIn },
-    { id: 4, title: 'Pago', component: DatosTransaccion, key: 'transaccion' , icon: Icons.Money }
+    { id: 1, title: 'Cliente', component: DatosCliente, key: 'cliente', icon: Icons.User },
+    { id: 2, title: 'Producto', component: DatosProducto, key: 'producto', icon: Icons.Phone },
+    { id: 3, title: 'Trade-In', component: DatosPartePago, key: 'parteDePago', icon: Icons.TradeIn },
+    { id: 4, title: 'Pago', component: DatosTransaccion, key: 'transaccion', icon: Icons.Money }
 ];
 
 // --- COMPONENTE MODAL DE ÉXITO ---
@@ -42,14 +42,14 @@ const SuccessModal = ({ onClose }: { onClose: () => void }) => {
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-[bounce_1s_infinite]">
                     <span className="text-4xl">🎉</span>
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">¡Venta Exitosa!</h3>
                 <p className="text-gray-500 mb-8 text-sm">
                     La operación ha sido registrada correctamente en el sistema y el stock fue actualizado.
                 </p>
-                
-                <button 
-                    onClick={onClose} 
+
+                <button
+                    onClick={onClose}
                     className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 active:scale-95"
                 >
                     Nueva Venta
@@ -65,12 +65,12 @@ const NuevaVenta: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    
+
     // Estados de UI
-    const [showModal, setShowModal] = useState(false); 
-    const [status, setStatus] = useState<'idle' | 'error'>('idle'); 
+    const [showModal, setShowModal] = useState(false);
+    const [status, setStatus] = useState<'idle' | 'error'>('idle');
     const [msg, setMsg] = useState('');
-    
+
     const [dbOptions, setDbOptions] = useState<IProductConfig[]>([]);
     const { user } = useAuth();
 
@@ -98,12 +98,12 @@ const NuevaVenta: React.FC = () => {
         const { name, value } = e.target;
         const val = name === 'costo' ? Number(value) : value;
         if (name === 'tipo') {
-             setFormData(prev => ({ 
-                 ...prev, 
-                 producto: { ...prev.producto, tipo: value, modelo: '', capacidad: '', color: '' } 
-             }));
+            setFormData(prev => ({
+                ...prev,
+                producto: { ...prev.producto, tipo: value, modelo: '', capacidad: '', color: '' }
+            }));
         } else {
-             setFormData(prev => ({ ...prev, producto: { ...prev.producto, [name]: val } }));
+            setFormData(prev => ({ ...prev, producto: { ...prev.producto, [name]: val } }));
         }
     };
     const updatePartePago = (e: any) => {
@@ -137,10 +137,10 @@ const NuevaVenta: React.FC = () => {
 
         // Validación Cliente
         if (!formData.cliente.nombre.trim()) newErrors['cliente.nombre'] = 'El nombre es obligatorio';
-        
+
         // Validación Producto
         if (!formData.producto.tipo) newErrors['producto.tipo'] = 'Selecciona una categoría';
-        
+
         // Validación Transacción
         if (formData.transaccion.monto <= 0) newErrors['transaccion.monto'] = 'El precio debe ser mayor a 0';
 
@@ -153,7 +153,7 @@ const NuevaVenta: React.FC = () => {
             if (formData.parteDePago.costo <= 0) newErrors['parteDePago.costo'] = 'Cotización requerida';
         }
 
-        setErrors(newErrors); 
+        setErrors(newErrors);
 
         if (Object.keys(newErrors).length > 0) {
             setStatus('error');
@@ -176,7 +176,7 @@ const NuevaVenta: React.FC = () => {
         try {
             const ventaFinal = {
                 ...formData,
-                vendedor: user?.email || 'Anónimo' 
+                vendedor: user?.email || 'Anónimo'
             };
             const response = await guardarVentaWithResponse(ventaFinal);
 
@@ -188,16 +188,16 @@ const NuevaVenta: React.FC = () => {
                 }
 
                 // ÉXITO: Mostramos Modal y Limpiamos caché
-                setShowModal(true); 
+                setShowModal(true);
                 sessionStorage.removeItem('sys_ventas_history');
-            } else { 
-                throw new Error(response.message); 
+            } else {
+                throw new Error(response.message);
             }
         } catch (error: any) {
             setStatus('error');
             setMsg(error.message);
-        } finally { 
-            setLoading(false); 
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -215,23 +215,23 @@ const NuevaVenta: React.FC = () => {
     const cardBase = "bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-fit";
 
     const ToggleSwitch = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
-    <div 
-        onClick={onClick} 
-        className="flex items-center justify-between cursor-pointer group py-2 select-none"
-    >
-        <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
-            {label}
-        </span>
-        <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${active ? 'bg-blue-600' : 'bg-gray-300'}`}>
-            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${active ? 'translate-x-6' : 'translate-x-0'}`}></div>
+        <div
+            onClick={onClick}
+            className="flex items-center justify-between cursor-pointer group py-2 select-none"
+        >
+            <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
+                {label}
+            </span>
+            <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${active ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${active ? 'translate-x-6' : 'translate-x-0'}`}></div>
+            </div>
         </div>
-    </div>
     );
 
     const toggleConfig = (key: 'imprimirTicket' | 'enviarMail') => {
-    setConfigSalida(prev => ({
-        ...prev,
-        [key]: !prev[key]
+        setConfigSalida(prev => ({
+            ...prev,
+            [key]: !prev[key]
         }));
     };
 
@@ -245,7 +245,7 @@ const NuevaVenta: React.FC = () => {
 
     return (
         <div className="flex flex-col min-h-full bg-gray-50 p-4 md:p-6 font-sans relative">
-            
+
             {/* MODAL DE ÉXITO */}
             {showModal && <SuccessModal onClose={handleReset} />}
 
@@ -257,7 +257,7 @@ const NuevaVenta: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     {status === 'error' && <span className="bg-red-100 text-red-700 px-3 py-1 rounded-lg font-bold animate-bounce text-sm">⚠️ {msg}</span>}
-                    
+
                     <button onClick={() => setViewMode(prev => prev === 'grid' ? 'wizard' : 'grid')} className="flex items-center gap-2 bg-white border px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50 transition-colors">
                         <Icons.PrevNext className="w-4 h-4 text-gray-500" />
                         {viewMode === 'grid' ? 'Ver Paso a Paso' : 'Ver Grilla'}
@@ -267,14 +267,14 @@ const NuevaVenta: React.FC = () => {
 
             {viewMode === 'grid' ? (
                 // --- MODO GRID ---
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
                     {/* COLUMNA 1 */}
-                    <div className="lg:col-span-4 space-y-6">
+                    <div className="space-y-6">
                         <div className={cardBase}>
-                             <DatosCliente 
-                             data={formData.cliente} 
-                             onChange={updateCliente} 
-                             errors={errors} />
+                            <DatosCliente
+                                data={formData.cliente}
+                                onChange={updateCliente}
+                                errors={errors} />
                         </div>
                         <div className={cardBase}>
                             <DatosTransaccion data={formData.transaccion} onChange={updateTransaccion} errors={errors} />
@@ -282,7 +282,7 @@ const NuevaVenta: React.FC = () => {
                     </div>
 
                     {/* COLUMNA 2 */}
-                    <div className="lg:col-span-4 space-y-6">
+                    <div className="space-y-6">
                         <div className={cardBase}>
                             <DatosProducto data={formData.producto} onChange={updateProducto} options={dbOptions} errors={errors} />
                         </div>
@@ -299,12 +299,12 @@ const NuevaVenta: React.FC = () => {
                     </div>
 
                     {/* COLUMNA 3 */}
-                    <div className="lg:col-span-4 space-y-6 flex flex-col h-full">
+                    <div className="md:col-span-2 xl:col-span-1 space-y-6 flex flex-col h-full">
                         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
                             <h3 className="text-xs font-bold uppercase text-gray-400">Configuración de Entrega</h3>
                             <div className="space-y-3">
-                                <ToggleSwitch label="🖨️ Imprimir Nota de Compra" active={configSalida.imprimirTicket} onClick={() => toggleConfig('imprimirTicket')}/>
-                                <ToggleSwitch label="✉️ Enviar Confirmación por Email" active={configSalida.enviarMail} onClick={() => toggleConfig('enviarMail')}/>
+                                <ToggleSwitch label="🖨️ Imprimir Nota de Compra" active={configSalida.imprimirTicket} onClick={() => toggleConfig('imprimirTicket')} />
+                                <ToggleSwitch label="✉️ Enviar Confirmación por Email" active={configSalida.enviarMail} onClick={() => toggleConfig('enviarMail')} />
                             </div>
                         </div>
 
@@ -317,15 +317,15 @@ const NuevaVenta: React.FC = () => {
                                     </div>
                                     <div className="pl-4">
                                         <p className="font-bold text-sm text-slate-300 truncate italic">
-                                            {formData.cliente.nombre || formData.cliente.apellido 
-                                                ? `${formData.cliente.nombre} ${formData.cliente.apellido}` 
+                                            {formData.cliente.nombre || formData.cliente.apellido
+                                                ? `${formData.cliente.nombre} ${formData.cliente.apellido}`
                                                 : <span className="text-slate-600 italic">Sin nombre...</span>}
                                         </p>
                                     </div>
                                     <div className="pl-4">
                                         <p className="font-bold text-sm text-slate-300 truncate italic">
-                                            {formData.cliente.email 
-                                                ? formData.cliente.email 
+                                            {formData.cliente.email
+                                                ? formData.cliente.email
                                                 : <span className="text-slate-600 italic">Sin email...</span>}
                                         </p>
                                     </div>
@@ -351,14 +351,14 @@ const NuevaVenta: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* BOTÓN GRID ACTUALIZADO */}
-                            <button 
-                                onClick={handleSubmit} 
-                                disabled={loading} 
+                            <button
+                                onClick={handleSubmit}
+                                disabled={loading}
                                 className={`w-full py-4 mt-8 rounded-xl font-bold text-base transition-all transform flex items-center justify-center 
-                                    ${loading 
-                                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                                    ${loading
+                                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                                         : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 active:scale-[0.98]'
                                     }`}
                             >
@@ -377,7 +377,7 @@ const NuevaVenta: React.FC = () => {
                 // --- MODO WIZARD ---
                 <div className="flex-1 flex justify-center items-start pt-4">
                     <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col min-h-[600px] max-h-[85vh]">
-                        
+
                         {/* Pestañas Superiores */}
                         <div className="bg-gray-50 border-b px-6 py-4 flex justify-between items-center rounded-t-2xl overflow-x-auto scrollbar-hide">
                             <div className="flex space-x-2">
@@ -398,8 +398,8 @@ const NuevaVenta: React.FC = () => {
                                     data={formData.parteDePago}
                                     onChange={updatePartePago}
                                     options={dbOptions}
-                                    active={formData.parteDePago.esParteDePago} 
-                                    onToggle={togglePartePago} 
+                                    active={formData.parteDePago.esParteDePago}
+                                    onToggle={togglePartePago}
                                     errors={errors}
                                 />
                             ) : (
@@ -419,17 +419,17 @@ const NuevaVenta: React.FC = () => {
 
                         {/* Footer de Botones */}
                         <div className="p-6 bg-gray-50 border-t flex justify-between rounded-b-2xl mt-auto">
-                            <button 
-                                onClick={() => setCurrentStep(p => Math.max(0, p - 1))} 
-                                disabled={currentStep === 0 || loading} 
+                            <button
+                                onClick={() => setCurrentStep(p => Math.max(0, p - 1))}
+                                disabled={currentStep === 0 || loading}
                                 className="px-6 py-3 bg-white border rounded-xl disabled:opacity-50 hover:bg-gray-100 transition-colors"
                             >
                                 Atrás
                             </button>
-                            
+
                             {currentStep < STEPS.length - 1 ? (
-                                <button 
-                                    onClick={() => setCurrentStep(p => Math.min(STEPS.length - 1, p + 1))} 
+                                <button
+                                    onClick={() => setCurrentStep(p => Math.min(STEPS.length - 1, p + 1))}
                                     disabled={loading}
                                     className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all"
                                 >
@@ -437,12 +437,12 @@ const NuevaVenta: React.FC = () => {
                                 </button>
                             ) : (
                                 // --- BOTÓN WIZARD ACTUALIZADO (ANTIMETRALLETA) ---
-                                <button 
-                                    onClick={handleSubmit} 
-                                    disabled={loading} 
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading}
                                     className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2
-                                        ${loading 
-                                            ? 'bg-gray-400 cursor-not-allowed text-gray-100' 
+                                        ${loading
+                                            ? 'bg-gray-400 cursor-not-allowed text-gray-100'
                                             : 'bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-500/30'
                                         }`}
                                 >
