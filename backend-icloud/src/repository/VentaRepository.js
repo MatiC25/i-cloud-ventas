@@ -1,46 +1,53 @@
 class VentaRepository extends GenericRepository {
-  constructor() {
+  constructor(sheetName = SHEET.CLIENTES_MINORISTAS) {
     // YA NO necesitamos hardcodear el ID ni el MAP.
     // Usamos las constantes globales.
-    super(SHEET.CLIENTES_MINORISTAS);
+    super(sheetName);
   }
 
-  // /**
-  //  * Recibe un objeto donde las Keys son EXACTAMENTE los headers del Excel
-  //  * Ejemplo: { "Nombre y Apellido": "Juan", "Monto": 100 }
-  //  */
-  // save(datosExcel) {
-  //   // 1. Usamos el helper getDB() que ya maneja la configuración dinámica
-  //   const ss = getDB(); 
-  //   const sheet = ss.getSheetByName(this.sheetName);
+  /**
+   * Obtiene las últimas ventas registradas.
+   * @param {number} limit - Cantidad máxima de filas a traer (ej: 50)
+   */
+  findRecent(limit = 100) { // Por defecto trae 100 si no le pasas nada
+    const ss = getDB();
+    const sheet = ss.getSheetByName(this.sheetName);
+    if (!sheet) return [];
 
-  //   console.log(`Guardando en: ${ss.getName()} > ${this.sheetName}`);
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return []; // Solo hay headers o está vacía
 
-  //   if (!sheet) throw new Error(`Error Crítico: No existe la hoja '${this.sheetName}'`);
+    // --- LÓGICA DE PAGINACIÓN INVERSA (Lo más nuevo está al final) ---
 
-  //   // 2. Leemos los encabezados REALES de la hoja
-  //   const lastCol = sheet.getLastColumn();
-  //   if (lastCol === 0) throw new Error("La hoja está vacía. Ejecuta la verificación de integridad.");
-    
-  //   // Obtenemos fila 1: ["Fecha", "Mes", "N° ID", ...]
-  //   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    
-  //   // 3. Mapeo Dinámico (El corazón del sistema)
-  //   // Creamos un array vacío del tamaño de las columnas existentes
-  //   const newRow = headers.map(header => {
-  //     // Limpiamos el header del Excel (trim) para evitar errores por espacios
-  //     const headerName = header.toString().trim();
-      
-  //     // Buscamos si nuestro objeto datosExcel tiene un valor para este header
-  //     const valor = datosExcel[headerName];
-      
-  //     // Devolvemos el valor o string vacío si no existe
-  //     return valor !== undefined ? valor : "";
-  //   });
+    // 1. Calculamos cuántas filas de datos reales hay (restando el header)
+    const totalDataRows = lastRow - 1;
 
-  //   // 4. Guardamos
-  //   sheet.appendRow(newRow);
-    
-  //   console.log("Fila guardada exitosamente.");
-  // }
+    // 2. Ajustamos el límite: si piden 100 pero hay 50, traemos 50.
+    const effectiveLimit = Math.min(limit, totalDataRows);
+
+    // 3. Calculamos la fila de inicio. 
+    // Ejemplo: Si hay 1000 filas y quiero las últimas 100:
+    // Start = 1000 - 100 + 1 = 901.
+    const startRow = lastRow - effectiveLimit + 1;
+
+    // --- LECTURA OPTIMIZADA ---
+
+    // Leemos los Headers (Siempre fila 1)
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Leemos SOLO el rango final (StartRow hasta el final)
+    // getRange(fila, col, numFilas, numCols)
+    const data = sheet.getRange(startRow, 1, effectiveLimit, sheet.getLastColumn()).getValues();
+
+    // Mapeamos y REVERTIMOS (.reverse) para que salga primero la venta más nueva
+    return data.map(row => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        // Normalizamos keys (ej: "Total USD" -> "totalUsd" si quisieras, o lo dejas igual)
+        obj[h.toString().trim()] = row[i];
+      });
+      return obj;
+    }).reverse();
+  }
+
 }

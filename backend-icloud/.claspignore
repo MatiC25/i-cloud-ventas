@@ -1,0 +1,4 @@
+**/tests/**
+**/*.test.js
+tests/config.js
+.env

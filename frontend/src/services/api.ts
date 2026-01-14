@@ -57,12 +57,7 @@ export const guardarVentaWithResponse = async (venta: IVenta): Promise<any> => {
     }
 };
 
-export interface IProductConfig {
-    categoria: string;
-    modelo: string;
-    variantes: string[];
-    colores: string[];
-}
+
 
 export const guardarNuevoProductoConfig = async (nuevoProd: any) => {
     const response = await fetch(import.meta.env.VITE_GOOGLE_SCRIPT_URL, {
@@ -86,14 +81,7 @@ export const getFormOptions = async (): Promise<IProductConfig[]> => {
     }
 };
 
-export interface IVentaHistorial {
-    id: string;
-    fecha: string;
-    cliente: string;
-    producto: string;
-    monto: number;
-    divisa: string;
-}
+
 
 export const getUltimasVentas = async (): Promise<IVentaHistorial[]> => {
     const URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL; 

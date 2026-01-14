@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';  
-import { useConfig } from '../Admin/ConfigContext';
+import React, { useState, useEffect } from 'react';
+import { useConfig } from './ConfigContext';
 import { checkSpreadsheetIntegrity, updateSystemConfig } from '../../services/api';
 
 type TabType = 'general' | 'interface' | 'advanced';
@@ -62,54 +62,53 @@ export const SystemSettings: React.FC = () => {
 
     // Manejador: Guardar ID Sheet
     const handleConfigUpdate = async () => {
-    if (!sheetId) return; // sheetId es el estado del input
-    setStatusAdvanced('loading');
+        if (!sheetId) return; // sheetId es el estado del input
+        setStatusAdvanced('loading');
 
-    try {
-        console.log("1. Iniciando verificación de integridad para ID:", sheetId);
-        
-        // A. LLAMADA DE VERIFICACIÓN
-        const checkResult = await checkSpreadsheetIntegrity(sheetId);
-        console.log("Resultado verificación:", checkResult);
+        try {
+            console.log("1. Iniciando verificación de integridad para ID:", sheetId);
 
-        if (checkResult.status === 'error') {
-            alert(`Error de conexión:\n${checkResult.message}`);
+            // A. LLAMADA DE VERIFICACIÓN
+            const checkResult = await checkSpreadsheetIntegrity(sheetId);
+            console.log("Resultado verificación:", checkResult);
+
+            if (checkResult.status === 'error') {
+                alert(`Error de conexión:\n${checkResult.message}`);
+                setStatusAdvanced('error');
+                return;
+            }
+
+            // B. SI HUBO CAMBIOS (Instalación automática)
+            if (checkResult.changes && checkResult.changes.length > 0) {
+                alert(`✅ INSTALACIÓN AUTOMÁTICA COMPLETADA\n\nEl sistema detectó una hoja nueva y creó la estructura necesaria:\n\n${checkResult.changes.join('\n')}`);
+            } else {
+                // Si no hubo cambios, es que ya estaba bien
+                console.log("La hoja ya tenía la estructura correcta.");
+            }
+
+            // C. GUARDAR EL ID (Persistencia)
+            await updateSystemConfig(sheetId);
+
+            // (Opcional) Si usas el ConfigContext para guardar el ID en localStorage también:
+            // updateSheetId(sheetId); 
+
+            setStatusAdvanced('success');
+            alert("¡Conexión establecida y guardada exitosamente!");
+
+        } catch (e: any) {
+            console.error("Error en el proceso:", e);
+            alert("Error crítico: " + e.message);
             setStatusAdvanced('error');
-            return;
         }
-
-        // B. SI HUBO CAMBIOS (Instalación automática)
-        if (checkResult.changes && checkResult.changes.length > 0) {
-            alert(`✅ INSTALACIÓN AUTOMÁTICA COMPLETADA\n\nEl sistema detectó una hoja nueva y creó la estructura necesaria:\n\n${checkResult.changes.join('\n')}`);
-        } else {
-            // Si no hubo cambios, es que ya estaba bien
-            console.log("La hoja ya tenía la estructura correcta.");
-        }
-
-        // C. GUARDAR EL ID (Persistencia)
-        await updateSystemConfig(sheetId);
-        
-        // (Opcional) Si usas el ConfigContext para guardar el ID en localStorage también:
-        // updateSheetId(sheetId); 
-
-        setStatusAdvanced('success');
-        alert("¡Conexión establecida y guardada exitosamente!");
-
-    } catch (e: any) {
-        console.error("Error en el proceso:", e);
-        alert("Error crítico: " + e.message);
-        setStatusAdvanced('error');
-    }
     };
 
     const TabButton = ({ id, label, icon: Icon }: { id: TabType, label: string, icon: React.FC<any> }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
-                activeTab === id
-                ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${activeTab === id
+                    ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
         >
             <Icon className="w-5 h-5" />
             {label}
@@ -122,7 +121,7 @@ export const SystemSettings: React.FC = () => {
             <div className="bg-white border-b border-gray-200 px-8 pt-8 shadow-sm z-10">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Configuración</h2>
                 <p className="text-gray-500 text-sm mb-6">Administra las preferencias generales y conexiones del sistema.</p>
-                
+
                 <div className="flex space-x-1">
                     <TabButton id="general" label="General" icon={Icons.Building} />
                     <TabButton id="interface" label="Interfaz" icon={Icons.Palette} />
@@ -133,7 +132,7 @@ export const SystemSettings: React.FC = () => {
             {/* CONTENIDO */}
             <div className="flex-1 p-8 overflow-y-auto">
                 <div className="max-w-4xl mx-auto">
-                    
+
                     {/* --- PESTAÑA GENERAL --- */}
                     {activeTab === 'general' && (
                         <div className="space-y-6 animate-fade-in-up">
@@ -142,31 +141,31 @@ export const SystemSettings: React.FC = () => {
                                     <h3 className="font-bold text-gray-800 text-lg">Perfil de la Empresa</h3>
                                     {statusGeneral === 'success' && <span className="text-green-600 text-sm font-bold bg-green-50 px-3 py-1 rounded-lg">¡Guardado!</span>}
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nombre Comercial</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={companyName}
                                             onChange={(e) => setCompanyName(e.target.value)}
-                                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         />
                                         <p className="text-xs text-gray-400 mt-2">Este nombre aparecerá en la barra lateral y reportes.</p>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Email de Contacto</label>
-                                        <input 
-                                            type="email" 
+                                        <input
+                                            type="email"
                                             value={contactEmail}
                                             onChange={(e) => setContactEmail(e.target.value)}
-                                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="mt-8 flex justify-end border-t border-gray-100 pt-6">
-                                    <button 
+                                    <button
                                         onClick={handleSaveGeneral}
                                         disabled={statusGeneral === 'saving'}
                                         className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
@@ -203,7 +202,7 @@ export const SystemSettings: React.FC = () => {
                                     <div>
                                         <h3 className="text-lg font-bold text-red-900">Conexión a Base de Datos</h3>
                                         <p className="text-sm text-red-700 mt-1 leading-relaxed max-w-xl">
-                                            El sistema está vinculado a una Hoja de Cálculo de Google. 
+                                            El sistema está vinculado a una Hoja de Cálculo de Google.
                                             Cambiar el ID a continuación <strong>interrumpirá inmediatamente</strong> el servicio hasta que se restablezca una conexión válida.
                                         </p>
                                     </div>
@@ -212,14 +211,14 @@ export const SystemSettings: React.FC = () => {
                                 <div className="bg-white p-6 rounded-xl border border-red-100 space-y-4">
                                     <label className="text-xs font-bold text-red-800 uppercase">Google Sheet ID</label>
                                     <div className="flex gap-3">
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={sheetId}
                                             onChange={(e) => setSheetId(e.target.value)}
                                             placeholder="Ej: 1gk8Miut5Wt5uv..."
                                             className="flex-1 px-4 py-3 rounded-xl border border-red-200 text-sm focus:ring-2 focus:ring-red-500/20 outline-none text-gray-700 font-mono"
                                         />
-                                        <button 
+                                        <button
                                             onClick={handleConfigUpdate}
                                             disabled={statusAdvanced === 'loading'}
                                             className="bg-red-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/30 disabled:opacity-50 transition-all active:scale-95 whitespace-nowrap"
