@@ -1,6 +1,6 @@
 // const { apiRequest } = require('./config');
 
-// // Datos de Prueba
+// Datos de Prueba
 // const VENTA_TEST_BASE = {
 //     cliente: {
 //         nombre: "TestNombre",
@@ -39,7 +39,7 @@
 // async function testVentas() {
 //     console.log("🚀 Iniciando Test de Ventas de Integración\n");
 
-//     // TEST 1: Minorista
+//     TEST 1: Minorista
 //     console.log("🔹 Probando Venta MINORISTA...");
 //     try {
 //         const payloadMinorista = { ...VENTA_TEST_BASE, tipoVenta: "Minorista" };
@@ -56,7 +56,7 @@
 
 //     console.log("\n-----------------------------------\n");
 
-//     // TEST 2: Mayorista
+//     TEST 2: Mayorista
 //     console.log("🔹 Probando Venta MAYORISTA...");
 //     try {
 //         const payloadMayorista = { ...VENTA_TEST_BASE, tipoVenta: "Mayorista" };

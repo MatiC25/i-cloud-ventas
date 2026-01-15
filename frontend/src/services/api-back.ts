@@ -11,10 +11,16 @@ import {
     IGastosConfigRow,
     IDashboardStats,
     IConfigProducto,
-    IBalanceResponse
+    IBalanceResponse,
+    IDashboardStatsResponse,
+    IDashboardCacheEnvelope,
+    CacheCategory,
+    DASHBOARD_KEY
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
+import { invalidateCache } from "@/utils/invalidadorCache";
+import { mutate } from 'swr';
 
 // --- Simple Local Cache ---
 export const CACHE: Record<string, any> = {
@@ -38,7 +44,11 @@ const isCacheValid = (key: string) => {
 
 
 export const guardarVenta = async (venta: IVenta) => {
-    return await apiRequest<ISaveVentaResponse>({ action: 'nueva_venta', payload: venta });
+    const response = await apiRequest<ISaveVentaResponse>({ action: 'nueva_venta', payload: venta });
+    if (response) {
+        await invalidateCache('dashboard');
+    }
+    return response;
 };
 
 export const updateVenta = async (venta: IVentaTabla) => {
@@ -48,7 +58,11 @@ export const updateVenta = async (venta: IVentaTabla) => {
 };
 
 export const deleteVenta = async (id: string) => {
-    return await apiRequest({ action: 'delete_venta', id });
+    const response = await apiRequest({ action: 'delete_venta', id });
+    if (response) {
+        await invalidateCache('dashboard');
+    }
+    return response;
 };
 
 export const getFormOptions = async (forceRefresh = false) => {
@@ -129,8 +143,28 @@ export const getOperaciones = async (forceRefresh = false): Promise<IOperacion[]
     return mapped;
 }
 
+// export const saveOperacion = async (operacion: any) => {
+//     const response = await apiRequest({ action: 'nueva_operacion', payload: operacion });
+//     if (response) {
+
+//         mutate('dashboard');
+//         await invalidateCache('dashboard');
+//     }
+//     return response;
+// }
+
 export const saveOperacion = async (operacion: any) => {
-    return apiRequest({ action: 'nueva_operacion', payload: operacion });
+    const response = await apiRequest({ action: 'nueva_operacion', payload: operacion });
+    
+    if (response) {
+        triggerCacheRebuild('dashboard')
+            .then(() => {
+                mutate(DASHBOARD_KEY); 
+            })
+            .catch(err => console.error("Error en background:", err));
+    }
+
+    return response;
 }
 
 export const updateOperacion = async (operacion: IOperacion) => {
@@ -141,22 +175,19 @@ export const deleteOperacion = async (id: string) => {
     return apiRequest({ action: 'delete_operacion', payload: { id } });
 }
 
-export const getDashboardStats = async (forceRefresh = false): Promise<IDashboardStats | null> => {
-    if (!forceRefresh && isCacheValid('dashboardStats') && CACHE.dashboardStats) return CACHE.dashboardStats;
-
-    const stats = await apiRequest<IDashboardStats>({ action: 'getDashboardStats' });
-    if (stats) {
-        CACHE.dashboardStats = stats;
-        lastFetch.dashboardStats = Date.now();
-    }
-    return stats;
-}
-
-export const triggerCacheRebuild = async () => {
-    return apiRequest({ action: 'trigger_cache_rebuild' });
+export const triggerCacheRebuild = async (category: CacheCategory) => {
+    return apiRequest({ action: 'triggerCacheRebuild', payload: { category } });
 }
 
 
 export const getLiveBalances = async () => {
     return apiRequest<IBalanceResponse>({ action: 'getLiveBalances' });
+}
+
+export const getDashboardStats = async () => {
+    return apiRequest<IDashboardCacheEnvelope>({ action: 'getDashboardStats' });
+}
+
+export const checkCacheStatus = async () => {
+    return apiRequest({ action: 'checkCacheStatus' });
 }

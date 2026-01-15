@@ -3,7 +3,7 @@ class TaskService {
         this.repository = new TaskRepository();
     }
 
-    createTask(payload) {
+    static createTask(payload) {
         // Validate payload
         if (!payload.Descripcion) throw new Error("La descripción es obligatoria");
 
@@ -18,25 +18,25 @@ class TaskService {
         return this.repository.create(task);
     }
 
-    getPendingTasks() {
+    static getPendingTasks() {
         return this.repository.findPending();
     }
 
-    getTodaysTasks() {
+    static getTodaysTasks() {
         return this.repository.findTodaysTasks();
     }
 
-    completeTask(id) {
+    static completeTask(id) {
         if (!id) throw new Error("Se requiere el ID de la tarea");
         return this.repository.complete(id);
     }
 
-    reactivateTask(id) {
+    static reactivateTask(id) {
         if (!id) throw new Error("Se requiere el ID de la tarea");
         return this.repository.reactivate(id);
     }
 
-    deleteTask(id) {
+    static deleteTask(id) {
         if (!id) throw new Error("Se requiere el ID de la tarea");
         return this.repository.delete(id);
     }

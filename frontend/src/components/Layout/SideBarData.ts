@@ -27,14 +27,14 @@ export const SideBarData = {
       title: "Operativa",
       items: [
         {
-          title: "Nueva Venta",
-          url: "nueva-venta",
-          icon: IconShoppingCartDollar,
-        },
-        {
           title: "Dashboard",
           url: "dashboard",
           icon: IconDashboard,
+        },
+        {
+          title: "Nueva Venta",
+          url: "nueva-venta",
+          icon: IconShoppingCartDollar,
         },
         {
           title: "Tareas Compartidas",

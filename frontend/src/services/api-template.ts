@@ -13,7 +13,9 @@ async function apiRequest<T>(body: object): Promise<T> {
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            headers: new Headers({ 
+                'Content-Type': 'text/plain;charset=utf-8' 
+            }),
             body: JSON.stringify(body),
         });
 
@@ -26,6 +28,8 @@ async function apiRequest<T>(body: object): Promise<T> {
         if (json.status === 'error') {
             throw new Error(json.message || 'Error desconocido en el servidor');
         }
+
+        // console.log("API DATA:", json.data);
 
         return json.data as T;
     } catch (error) {

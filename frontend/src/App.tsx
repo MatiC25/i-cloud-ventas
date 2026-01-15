@@ -48,7 +48,7 @@ const AppLayout: React.FC = () => {
             <main className="w-full bg-background min-h-screen transition-colors duration-300">
 
                 {/* Header */}
-                <div className="p-4 border-b border-border bg-background flex items-center justify-between gap-4">
+                <div className="sticky top-0 z-50 p-4 border-b border-border bg-background flex items-center justify-between gap-4">
 
                     <div className="flex items-center gap-2">
                         <SidebarTrigger />

@@ -14,390 +14,320 @@ import {
     Building2,
     CreditCard,
     Coins,
-    Package
+    Package,
+    BoxIcon,
+    DollarSign
 } from 'lucide-react';
+import { motion, Variants } from "framer-motion";
+import { checkCacheStatus } from "@/services/api-back";
 
 // Asegúrate de que estas rutas sean correctas en tu proyecto
 import { getDashboardStats, triggerCacheRebuild, getLiveBalances } from "@/services/api-back";
-import { IDashboardStats, IBalanceResponse } from "@/types"; // Asumo que IDashboardStats ya existe
+import { IDashboardStats, IBalanceResponse, IDashboardStatsResponse } from "@/types"; // Asumo que IDashboardStats ya existe
+// Imports from Shadcn/UI and other components
+import { StatCard } from "@/components/ui/StatCard";
+import { AccountItem } from "@/components/ui/AccountItem";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { QuickActions } from "./QuickActions";
 import { TablaOperaciones } from "@/components/Pages/Estadisticas/TablaOperaciones";
 import { DailyGoalCard } from "./DailyGoalCard";
+import { RecentOperationsTable } from "./RecentOperationsTable";
+import { TopSellersTable } from "./TopSellersTable";
+import { TopProductsChart } from "./TopProductsChart";
+import { useEstadisticasDashboardCache } from '@/hooks/useEstadisticasDashboardCache';
+import { useMemo } from 'react';
 
-// --- INTERFACES ---
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1, // Efecto cascada entre elementos
+            delayChildren: 0.1
+        }
+    }
+};
 
-// Esta interfaz coincide con lo que devuelve tu método estático getLiveBalances
-
-// --- SUB-COMPONENTS ---
-
-const StatCard = ({ title, value, icon: Icon, trend, subtext }: any) => (
-    <div className="bg-white dark:bg-slate-950 p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md transition-shadow duration-300">
-        <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-gray-50 dark:bg-slate-900 rounded-xl">
-                <Icon size={20} className="text-gray-600 dark:text-gray-300" />
-            </div>
-            {trend !== undefined && (
-                <span className={`flex items-center text-xs font-medium px-2 py-1 rounded-full ${trend > 0 ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
-                    {trend > 0 ? <ArrowUpRight size={14} className="mr-1" /> : <ArrowDownRight size={14} className="mr-1" />}
-                    {Math.abs(trend)}%
-                </span>
-            )}
-        </div>
-        <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</p>
-            <h3 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{value}</h3>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{subtext}</p>
-        </div>
-    </div>
-);
-
-const AccountItem = ({ name, balance, currency, icon: Icon, color }: any) => (
-    <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-slate-900/50 rounded-2xl hover:bg-gray-50 dark:hover:bg-slate-900 transition-colors">
-        <div className="flex items-center gap-3">
-            <div className={`p-2.5 ${color} text-white rounded-xl shadow-sm`}>
-                <Icon size={18} />
-            </div>
-            <div>
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{name}</p>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{currency}</p>
-            </div>
-        </div>
-        <div className="text-right">
-            <p className={`text-sm font-bold ${balance < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                {currency === 'USD' ? 'US$ ' : '$'}{balance.toLocaleString()}
-            </p>
-        </div>
-    </div>
-);
-
-// --- MAIN COMPONENT ---
+const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { type: "spring", stiffness: 50, damping: 15 }
+    }
+};
 
 export function Dashboard() {
-    const [stats, setStats] = useState<IDashboardStats | null>(null);
-    const [balances, setBalances] = useState<IBalanceResponse | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { stats, loading, isRefreshing, error, mutate } = useEstadisticasDashboardCache();
     const [refreshing, setRefreshing] = useState(false);
 
-    const loadData = async (forceRewrite = false) => {
-        try {
-            if (forceRewrite) {
-                setRefreshing(true);
-                await triggerCacheRebuild();
+    const getWalletStyle = (name: string, currency: 'ARS' | 'USD') => {
+        const lowerName = name.toLowerCase();
+        let icon = currency === 'ARS' ? Wallet : Coins;
+        let color = currency === 'ARS' ? "bg-blue-500" : "bg-green-600";
+
+        if (currency === 'ARS') {
+            if (lowerName.includes("banco") || lowerName.includes("galicia") || lowerName.includes("santander")) {
+                icon = Building2;
+                color = "bg-red-500";
+            } else if (lowerName.includes("bru") || lowerName.includes("virtual") || lowerName.includes("mp")) {
+                icon = Building2;
+                color = "bg-purple-500";
             }
-
-            // Llamamos a ambas APIs en paralelo
-            const [statsData, liveBalancesData] = await Promise.all([
-                getDashboardStats(forceRewrite),
-                getLiveBalances()
-            ]);
-
-            console.log(statsData);
-            console.log(liveBalancesData);
-
-            if (statsData) setStats(statsData);
-            if (liveBalancesData) setBalances(liveBalancesData);
-
-        } catch (error) {
-            console.error("Failed to load dashboard data", error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
+        } else {
+            if (lowerName.includes("binance")) {
+                icon = Coins;
+                color = "bg-yellow-500";
+            } else if (lowerName.includes("takenos")) {
+                icon = CreditCard;
+                color = "bg-orange-500";
+            } else if (lowerName.includes("banco") || lowerName.includes("santander") || lowerName.includes("bbva")) {
+                icon = Building2;
+                color = "bg-blue-600";
+            }
         }
+
+        return { icon, color };
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
 
-    // --- TRANSFORM DATA ---
+    const seccionesCuentas = useMemo(() => {
+        if (!stats) return { ars: [], usd: [] };
 
-    // Priorizamos la data en vivo (balances) para las cuentas, si no existe usamos un objeto vacío por seguridad
-    const sourceBalances = balances || { billeterasDetalle: { ARS: {}, USD: {} }, saldoARS: 0, saldoUSD: 0 };
+        const ars = Object.entries(stats.billeterasDetalle.ARS).map(([name, bal]) => ({
+            name,
+            bal,
+            currency: 'ARS',
+            ...getWalletStyle(name, 'ARS')
+        }));
 
-    const cuentas: { name: string; balance: number; currency: string; icon: any; color: string }[] = [];
+        const usd = Object.entries(stats.billeterasDetalle.USD).map(([name, bal]) => ({
+            name,
+            bal,
+            currency: 'USD',
+            ...getWalletStyle(name, 'USD')
+        }));
 
-    // 1. Procesar Cuentas en ARS
-    Object.entries(sourceBalances.billeterasDetalle?.ARS || {}).forEach(([name, balance]) => {
-        if (Number(balance) !== 0) {
-            let Icon = Wallet;
-            let color = "bg-blue-500";
-            if (name.toLowerCase().includes("banco") || name.toLowerCase().includes("galicia") || name.toLowerCase().includes("santander")) { Icon = Building2; color = "bg-red-500"; }
-            if (name.toLowerCase().includes("bru") || name.toLowerCase().includes("virtual") || name.toLowerCase().includes("mp")) { Icon = Building2; color = "bg-purple-500"; }
+        return { ars, usd };
+    }, [stats]);
 
-            cuentas.push({ name, balance: Number(balance), currency: 'ARS', icon: Icon, color });
-        }
-    });
+    if (loading && !stats) {
+        return (
+            <div className="min-h-screen bg-[#F5F5F7] dark:bg-slate-950 p-4 md:p-8 space-y-6">
+                <div className="flex justify-between items-center mb-10">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-64 rounded-lg" />
+                        <Skeleton className="h-4 w-48 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-10 w-32 rounded-full" />
+                </div>
 
-    // 2. Procesar Cuentas en USD
-    Object.entries(sourceBalances.billeterasDetalle?.USD || {}).forEach(([name, balance]) => {
-        if (Number(balance) !== 0) {
-            let Icon = Coins;
-            let color = "bg-green-600";
-            if (name.toLowerCase().includes("binance")) { Icon = Coins; color = "bg-yellow-500"; }
-            if (name.toLowerCase().includes("takenos")) { Icon = CreditCard; color = "bg-orange-500"; }
-            if (name.toLowerCase().includes("banco") || name.toLowerCase().includes("santander") || name.toLowerCase().includes("bbva")) { Icon = Building2; color = "bg-blue-600"; }
+                {/* Hero Skeleton */}
+                <Skeleton className="h-48 w-full rounded-3xl" />
 
-            cuentas.push({ name, balance: Number(balance), currency: 'USD', icon: Icon, color });
-        }
-    });
+                {/* Quick Actions Skeleton */}
+                <div className="flex gap-4">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
+                </div>
 
-    // 3. Chart Data (Viene de stats históricos)
-    const graficoVentas = stats?.chartData || [];
+                {/* Grid Stats Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+                </div>
 
-    // 4. Categorias y Colores
-    const COLORS = ['#007AFF', '#5856D6', '#FF9500', '#FF2D55', '#10B981', '#F59E0B'];
-    const categorias = (stats?.categorias || []).map((c, i) => ({
-        ...c,
-        color: COLORS[i % COLORS.length]
-    }));
-
-    // 5. Top Productos
-    const topProductos = (stats?.topProductos || []).map(p => ({
-        name: p.name,
-        sales: p.sales,
-        profit: p.profit
-    }));
+                {/* Lists Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Skeleton className="h-[500px] rounded-3xl" />
+                    <Skeleton className="h-[500px] col-span-2 rounded-3xl" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] dark:bg-slate-950 text-gray-900 dark:text-gray-100 font-sans p-4 md:p-8">
+
+
+
             {/* Header */}
-            <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+            <motion.header
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4"
+            >
+
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight">IConnect Dashboard</h1>
                     <p className="text-gray-500 mt-1">Saldos de cuentas y rendimiento operativo.</p>
                 </div>
+
                 <div className="flex items-center gap-3">
                     <Button
                         variant="outline"
-                        onClick={() => loadData(true)}
+                        // onClick={() => loadData(true)}
                         disabled={refreshing}
                         className="rounded-full"
                     >
                         <Filter size={16} className="mr-2" />
                         {refreshing ? "Actualizando..." : "Actualizar Cache"}
                     </Button>
-                    <button className="flex items-center px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm">
-                        <Download size={16} className="mr-2" /> Reporte Cajas
-                    </button>
+
                 </div>
-            </header>
 
-            <main className="max-w-7xl mx-auto space-y-6">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                        console.log("Verificando Caché Backend...");
+                        //const status = await checkCacheStatus();
+                        const status: any = await checkCacheStatus();
+                        console.log("Respuesta cruda:", status);
+                        alert(JSON.stringify(status, null, 2));
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600"
+                >
+                    Check Cache
+                </Button>
 
+            </motion.header>
+
+
+            <motion.main
+                className="max-w-7xl mx-auto space-y-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Daily Goal - Top Hero */}
-                <DailyGoalCard stats={stats} />
+                <motion.div variants={itemVariants}>
+                    <DailyGoalCard stats={stats} />
+                </motion.div>
 
                 {/* Quick Actions - Always Visible */}
-                <QuickActions />
+                <motion.div variants={itemVariants}>
+                    <QuickActions />
+                </motion.div>
 
-                {loading ? (
-                    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-40 rounded-[24px]" />)}
-                        </div>
-                        <Skeleton className="h-[400px] rounded-[32px]" />
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <Skeleton className="lg:col-span-2 h-[300px] rounded-[32px]" />
-                            <Skeleton className="h-[300px] rounded-[32px]" />
-                        </div>
-                    </div>
-                ) : (!stats && !balances) ? (
-                    <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-[32px]">No hay datos disponibles</div>
-                ) : (
-                    <>
-                        {/* KPI Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <StatCard
-                                title="Capital en Pesos"
-                                value={`$${(balances?.saldoARS || 0).toLocaleString()}`}
-                                icon={Wallet}
-                                subtext="Saldo actual en vivo"
-                            />
-                            <StatCard
-                                title="Capital en Dólares"
-                                value={`US$ ${(balances?.saldoUSD || 0).toLocaleString()}`}
-                                icon={Coins}
-                                subtext="Saldo actual en vivo"
-                            />
-                            <StatCard
-                                title="Profit del Mes"
-                                value={`US$ ${(stats?.profitMensual || 0).toLocaleString()}`}
-                                icon={TrendingUp}
-                                trend={stats?.tendenciaProfit}
-                                subtext="En base a ventas USD"
-                            />
-                            <StatCard
-                                title="Órdenes"
-                                value={stats?.totalOrdenes || 0}
-                                icon={ShoppingCart}
-                                subtext="Ventas totales registradas"
-                            />
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <motion.div variants={itemVariants}>
+                        <StatCard
+                            title="Capital en Pesos"
+                            value={`$${(stats?.saldoARS || 0)?.toLocaleString()}`}
+                            icon={Wallet}
+                            color="bg-blue-500"
+                            subtext="Saldo actual"
+                        />
+                    </motion.div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                            {/* Detailed Account Balances */}
-                            <div className="lg:col-span-4 bg-white dark:bg-slate-950 p-8 rounded-[32px] shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h3 className="text-lg font-semibold">Saldos por Cuenta</h3>
-                                        <p className="text-sm text-gray-400">Desglose por entidad</p>
-                                    </div>
-                                    <Wallet size={20} className="text-gray-300" />
-                                </div>
-                                <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
-                                    {/* Pesos Section */}
-                                    <div className="mb-4">
-                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Pesos (ARS)</p>
-                                        <div className="space-y-2">
-                                            {cuentas.filter(c => c.currency === 'ARS').map((cuenta, i) => (
-                                                <AccountItem key={i} {...cuenta} />
-                                            ))}
-                                            {cuentas.filter(c => c.currency === 'ARS').length === 0 && <span className="text-xs text-gray-400 ml-1">Sin saldos en ARS</span>}
-                                        </div>
-                                    </div>
-                                    {/* USD Section */}
-                                    <div>
-                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Dólares (USD)</p>
-                                        <div className="space-y-2">
-                                            {cuentas.filter(c => c.currency === 'USD').map((cuenta, i) => (
-                                                <AccountItem key={i} {...cuenta} />
-                                            ))}
-                                            {cuentas.filter(c => c.currency === 'USD').length === 0 && <span className="text-xs text-gray-400 ml-1">Sin saldos en USD</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 pt-6 border-t border-gray-50 dark:border-slate-900">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-500 font-medium">Patrimonio Neto Est.</span>
-                                        {/* Cálculo aproximado con dolar a 1200, ajustable según lógica de negocio */}
-                                        <span className="text-lg font-bold text-black dark:text-white">
-                                            US$ {((balances?.saldoUSD || 0) + ((balances?.saldoARS || 0) / 1200)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                    <motion.div variants={itemVariants}>
+                        <StatCard
+                            title="Capital en Dólares"
+                            value={`$${(stats?.saldoUSD || 0)?.toLocaleString()}`}
+                            icon={Wallet}
+                            color="bg-blue-500"
+                            subtext="Saldo actual"
+                        />
+                    </motion.div>
 
-                            {/* Main Chart */}
-                            <div className="lg:col-span-8 bg-white dark:bg-slate-950 p-8 rounded-[32px] shadow-sm border border-gray-100 dark:border-slate-800">
-                                <div className="flex justify-between items-center mb-8">
-                                    <div>
-                                        <h3 className="text-lg font-semibold">Flujo de Caja</h3>
-                                        <p className="text-sm text-gray-400">Ingresos vs Profit (Últimos 30 días)</p>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <span className="flex items-center text-xs text-gray-500 font-medium">
-                                            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full mr-2"></span> Ingresos
-                                        </span>
-                                        <span className="flex items-center text-xs text-gray-500 font-medium">
-                                            <span className="w-2.5 h-2.5 bg-green-500 rounded-full mr-2"></span> Profit
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="h-[400px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={graficoVentas} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                            <defs>
-                                                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.15} />
-                                                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0} />
-                                                </linearGradient>
-                                                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.15} />
-                                                    <stop offset="95%" stopColor="#34C759" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" strokeOpacity={0.5} />
-                                            <XAxis
-                                                dataKey="date"
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                                                dy={10}
-                                                tickFormatter={(val) => {
-                                                    if (!val) return "";
-                                                    const parts = val.split('-');
-                                                    if (parts.length < 3) return val;
-                                                    return `${parts[2]}/${parts[1]}`;
-                                                }}
-                                            />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} />
-                                            <Tooltip
-                                                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
-                                            />
-                                            <Area type="monotone" dataKey="income" stroke="#007AFF" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
-                                            <Area type="monotone" dataKey="profit" stroke="#34C759" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </div>
+                    <motion.div variants={itemVariants}>
+                        <StatCard
+                            title="Cantidad de Ventas"
+                            value={stats?.stats.hoy.count || 0}
+                            icon={BoxIcon}
+                            color="bg-blue-500"
+                            subtext="Ventas hoy"
+                        />
+                    </motion.div>
+                    <motion.div variants={itemVariants}>
+                        <StatCard
+                            title="Profit"
+                            value={`$${(stats?.stats.mes.profit || 0)?.toLocaleString()}`}
+                            icon={DollarSign}
+                            color="bg-blue-500"
+                            subtext="Profit de Mes"
+                        />
+                    </motion.div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Top Products */}
-                            <div className="lg:col-span-2 bg-white dark:bg-slate-950 p-8 rounded-[32px] shadow-sm border border-gray-100 dark:border-slate-800">
-                                <h3 className="text-lg font-semibold mb-6">Equipos Más Vendidos</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {topProductos.map((prod, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-2xl">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-white dark:bg-black rounded-xl flex items-center justify-center shadow-sm">
-                                                    <Package size={20} className="text-gray-400" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{prod.name}</h4>
-                                                    <p className="text-xs text-gray-400">{prod.sales} Unidades</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-sm font-bold text-green-600">+${(prod.profit || 0).toLocaleString()}</span>
-                                            </div>
-                                        </div>
+
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Columna Izquierda: Cuentas */}
+                    <motion.div variants={itemVariants} className="lg:col-span-1 space-y-4">
+
+                        <div className="bg-white dark:bg-slate-900/50 rounded-3xl p-4 border border-gray-100 dark:border-slate-800 h-[600px] overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+
+                            {/* Sección ARS */}
+                            <div>
+                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Pesos Argentinos</h3>
+                                <div className="space-y-3">
+                                    {seccionesCuentas.ars.map((cuenta, i) => (
+                                        <AccountItem
+                                            key={cuenta.name}
+                                            name={cuenta.name}
+                                            balance={cuenta.bal}
+                                            currency={cuenta.currency}
+                                            icon={cuenta.icon}
+                                            color={cuenta.color}
+                                        />
                                     ))}
-                                    {topProductos.length === 0 && <span className="text-sm text-gray-500">No hay datos de productos este mes.</span>}
                                 </div>
                             </div>
 
-                            {/* Categories Chart */}
-                            <div className="bg-white dark:bg-slate-950 p-8 rounded-[32px] shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col items-center">
-                                <h3 className="text-lg font-semibold w-full text-left mb-6">Mix de Ventas</h3>
-                                <div className="h-[200px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={categorias}
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={10}
-                                                dataKey="value"
-                                            >
-                                                {categorias.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="w-full mt-6 grid grid-cols-2 gap-3">
-                                    {categorias.map((cat, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                                            <span className="text-xs font-medium text-gray-500">{cat.name} ({cat.value}%)</span>
-                                        </div>
+                            {/* Sección USD */}
+                            <div>
+                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Dólares</h3>
+                                <div className="space-y-3">
+                                     {seccionesCuentas.usd.map((cuenta, i) => (
+                                        <AccountItem
+                                            key={cuenta.name}
+                                            name={cuenta.name}
+                                            balance={cuenta.bal}
+                                            currency={cuenta.currency}
+                                            icon={cuenta.icon}
+                                            color={cuenta.color}
+                                        />
                                     ))}
-                                    {categorias.length === 0 && <span className="text-xs text-gray-400">Sin datos</span>}
+                                </div>
+                            </div>
+
+                        </div>
+                    </motion.div>
+
+                    {/* Columna Derecha: Gráfico (Placeholder por ahora) */}
+                    <motion.div variants={itemVariants} className="lg:col-span-2">
+                        <div className="bg-white dark:bg-slate-950 p-6 rounded-[24px] shadow-sm border border-gray-100 dark:border-slate-800 h-[600px] flex flex-col">
+                            <div className="mb-6">
+                                <h2 className="text-xl font-semibold tracking-tight">Rendimiento Financiero</h2>
+                                <p className="text-sm text-gray-500">Evolución de capital y ventas del mes.</p>
+                            </div>
+
+                            <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl">
+                                <div className="text-center text-gray-400">
+                                    <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
+                                    <p>Espacio reservado para Gráfico</p>
                                 </div>
                             </div>
                         </div>
+                    </motion.div>
+                </div>
 
-                        {/* Tabla de Operaciones */}
-                        <TablaOperaciones />
-                    </>
-                )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
+                    <motion.div variants={itemVariants}>
+                        <TopSellersTable topSellers={stats?.topVendedores || []} />
+                    </motion.div>
+                    <motion.div variants={itemVariants}>
+                        <TopProductsChart topProducts={stats?.rankingProductos || []} />
+                    </motion.div>
+                </div>
 
-            </main>
+                <motion.div variants={itemVariants}>
+                    <RecentOperationsTable operations={stats?.ultimasOperaciones || []} />
+                </motion.div>
+
+            </motion.main>
         </div>
     );
-}
+}   

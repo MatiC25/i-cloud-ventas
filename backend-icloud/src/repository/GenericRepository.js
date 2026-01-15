@@ -90,6 +90,6 @@ class GenericRepository {
         obj[h.toString().trim()] = row[i];
       });
       return obj;
-    });
+    }).reverse();
   }
 }

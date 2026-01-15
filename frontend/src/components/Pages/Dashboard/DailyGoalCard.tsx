@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Target, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
-import { IDashboardStats } from "@/types";
+import { IDashboardStatsResponse } from "@/types";
 import { FireworksBackground } from "@/components/ui/fireworks";
 
 interface DailyGoalCardProps {
-    stats: IDashboardStats | null;
+    stats: IDashboardStatsResponse | null;
 }
 
 export function DailyGoalCard({ stats }: DailyGoalCardProps) {
@@ -36,9 +36,9 @@ export function DailyGoalCard({ stats }: DailyGoalCardProps) {
     // Calculate goal progress based on today's chart data
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     // Ensure stats and chartData exist before accessing
-    const todayData = stats?.chartData?.find(d => d.date === todayStr) || { income: 0, profit: 0 };
+    const todayData = stats?.stats.hoy || { income: 0, profit: 0 };
     // Use income (ingresos) for the goal, consistent with previous logic
-    const lastDayVentas = todayData.income || 0;
+    const lastDayVentas = todayData.profit || 0;
 
     // Calculate percentage, capped at 100 for visual bar, but we can show >100% text
     const progressPercentage = Math.min((lastDayVentas / dailyGoal) * 100, 100);

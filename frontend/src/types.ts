@@ -262,3 +262,80 @@ export interface IBalanceResponse {
         USD: Record<string, number>;
     };
 }
+
+// ==================== //
+// --- Dashboard Stats ---
+// ==================== //
+
+export interface IDashboardCacheEnvelope {
+  source: "cache" | "rebuild";
+  data: IDashboardStatsResponse;
+}
+
+export interface IDashboardStatsResponse {
+    // --- Sección: Finanzas en vivo (Cajas) ---
+    saldoARS: number;
+    saldoUSD: number;
+    billeterasDetalle: {
+        ARS: Record<string, number>; // Ej: { "Caja Chica": 15000, "Banco": 50000 }
+        USD: Record<string, number>; // Ej: { "Payoneer": 200, "Efectivo": 100 }
+    };
+
+    // --- Sección: Métricas de Ventas ---
+    stats: {
+        hoy: MetricsBucket;
+        mes: MetricsBucket;
+        anio: MetricsBucket;
+        historico: MetricsBucket;
+    };
+
+    topVendedores: VendedorStat[];
+
+    ultimasOperaciones: OperacionReciente[];
+    rankingProductos?: RankingProductos[];
+
+    ultimaModificacion: string;
+}
+
+// Sub-tipos para mantener el código limpio
+
+export interface MetricsBucket {
+    total: number;
+    count: number;
+    profit: number;
+}
+
+export interface VendedorStat {
+    name: string;
+    total: number;
+    count: number;
+    profit: number;
+}
+
+export interface OperacionReciente {
+    id: string;
+    fecha: string | number;
+    cliente: string;
+    monto: number;
+    tipoProducto: string;
+    modelo: string;
+    capacidad: string;
+    color: string;
+    auditoria: string;
+    divisa?: string;
+    tipo?: "Venta" | "Gasto";
+}
+
+export interface RankingProductos {
+    name: string;
+    cantidad: number;
+    costo: number;
+    monto: number;
+}
+
+// ==================== //
+// == CATEGORIA DE CACHE == //
+// ==================== //
+export type CacheCategory = 'dashboard' | 'ventas' | 'operaciones' | 'config' | 'all';
+
+export const DASHBOARD_KEY = 'dashboard';

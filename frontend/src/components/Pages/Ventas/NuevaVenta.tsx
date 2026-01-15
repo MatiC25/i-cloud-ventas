@@ -8,7 +8,7 @@ import { Form } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { IFormConfig } from "@/types"
-import { guardarVenta, getFormOptions, getGastosConfig, getProductosConfig } from "@/services/api-back"
+import { guardarVenta, getFormOptions, getGastosConfig, getProductosConfig, triggerCacheRebuild } from "@/services/api-back"
 import { generarPDFVenta } from "@/utils/pdfGenerator"
 import { useUser } from "@clerk/clerk-react"
 import { NuevaVentaClassicView } from "./NuevaVentaClassicView"
@@ -28,10 +28,11 @@ const DEFAULT_FORM_CONFIG: IFormConfig = {
 }
 
 import { IConfigProducto } from "@/types"
+import { invalidateCache } from "@/utils/invalidadorCache"
 
 const productSchema = z.object({
     tipo: z.string().min(1, "Selecciona una categoría"),
-    modelo: z.string().min(1, "El modelo es obligatorio"),
+    modelo: z.string().default(""),
     capacidad: z.string().default(""),
     color: z.string().default(""),
     estado: z.string().default("Nuevo"),
@@ -46,6 +47,7 @@ const pagoSchema = z.object({
     monto: z.coerce.number().positive("El monto debe ser mayor a 0").default(0),
     divisa: z.string().default("USD"),
     tipoCambio: z.coerce.number().default(1),
+    destino: z.string().default("A confirmar"),
 })
 
 const formSchema = z.object({
@@ -130,7 +132,7 @@ export function NuevaVenta() {
         defaultValues: {
             cliente: { nombre: "", apellido: "", email: "", canal: "", contacto: "" },
             productos: [{ tipo: "", modelo: "", capacidad: "", color: "", estado: "Nuevo", imei: "", costo: 0, precio: 0, cantidad: 1, esParteDePago: false }],
-            pagos: [{ monto: 0, divisa: "USD", tipoCambio: 1550 }], // Default con un pago
+            pagos: [{ monto: 0, divisa: "USD", tipoCambio: 1550, destino: "A confirmar" }], // Default con un pago
             transaccion: { envioRetiro: "Retiro", comentarios: "", descargarComprobante: false },
             parteDePago: { esParteDePago: false, tipo: "", modelo: "", capacidad: "", costo: 0 },
             trazabilidad: { idOperacion: "", fecha: new Date().toISOString(), usuario: "" },
@@ -147,7 +149,7 @@ export function NuevaVenta() {
             // Para simplificar, tomamos el primer pago para llenar los campos "legacy"
             // y enviamos todo el array "pagos" para que el nuevo backend lo use si quiere.
 
-            const pagoPrincipal = values.pagos[0] || { monto: 0, divisa: "USD", tipoCambio: 1 };
+            const pagoPrincipal = values.pagos[0] || { monto: 0, divisa: "USD", tipoCambio: 1500, destino: "A confirmar" };
 
 
             const ventaFinal: any = {

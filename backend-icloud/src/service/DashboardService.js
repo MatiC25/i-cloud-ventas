@@ -1,4 +1,12 @@
+
+const CACHE_KEY = 'DASHBOARD_STATS';
+
+const CACHE_DURATION = 900;
+
+const STATS_CACHE_KEY = 'DASHBOARD_KPI_V2';
+
 class DashboardService {
+
 
     /**
      * Calculates detailed balances by account/method.
@@ -42,41 +50,8 @@ class DashboardService {
     }
 
     /**
-     * Helper to read 'Cajas' sheet live.
-     */
-    static getLiveBalances() {
-        const cajasRepo = new GenericRepository("Cajas");
-        const cajasData = cajasRepo.findAll();
-
-        const balancesDetailed = {
-            ARS: {},
-            USD: {}
-        };
-
-        cajasData.forEach(caja => {
-            const name = caja["Cajas"];
-            const saldoArg = Number(caja["Actualidad $ ARG"]) || 0;
-            const saldoUsd = Number(caja["Actualidad USD"]) || 0;
-
-            if (name) {
-                if (saldoArg !== 0) balancesDetailed.ARS[name] = saldoArg;
-                if (saldoUsd !== 0) balancesDetailed.USD[name] = saldoUsd;
-            }
-        });
-
-        const saldoARS = Object.values(balancesDetailed.ARS).reduce((a, b) => a + b, 0);
-        const saldoUSD = Object.values(balancesDetailed.USD).reduce((a, b) => a + b, 0);
-
-        return {
-            saldoARS,
-            saldoUSD,
-            billeterasDetalle: balancesDetailed
-        };
-    }
-
-    /**
      * Refreshes the dashboard cache sheet.
-     */
+    */
     static actualizarCacheDashboard() {
         const ss = getDB();
         let cacheSheet = ss.getSheetByName("Dashboard_Cache");
@@ -201,6 +176,7 @@ class DashboardService {
             .slice(0, 5);
 
         const totalSalesMonth = salesByCategoryArray.reduce((acc, curr) => acc + curr.value, 0);
+
         const mixVentas = salesByCategoryArray.map(item => ({
             name: item.name,
             value: totalSalesMonth > 0 ? Number(((item.value / totalSalesMonth) * 100).toFixed(1)) : 0
@@ -291,7 +267,7 @@ class DashboardService {
             "[]", // unused payment methods legacy slot
             totalOrders,
             trend,
-            JSON.stringify(balancesDetailed), // New Col N
+            JSON.stringify(billeterasDetalle), // New Col N
             JSON.stringify(sortedActivity)    // New Col O
         ];
 
@@ -347,4 +323,276 @@ class DashboardService {
             recientes: parseJ(data[14])
         };
     }
+
+    /**
+     * Lee la hoja de "Cajas"
+    */
+    static getLiveBalances() {
+        const cajasRepo = new GenericRepository("Cajas");
+        const cajasData = cajasRepo.findAll();
+
+        const balancesDetailed = {
+            ARS: {},
+            USD: {}
+        };
+
+        cajasData.forEach(caja => {
+            const name = caja["Cajas"];
+            const saldoArg = Number(caja["Actualidad ARS"]) || 0;
+            const saldoUsd = Number(caja["Actualidad USD"]) || 0;
+
+            if (name) {
+                if (saldoArg !== 0) balancesDetailed.ARS[name] = saldoArg;
+                if (saldoUsd !== 0) balancesDetailed.USD[name] = saldoUsd;
+            }
+        });
+
+        const saldoARS = Object.values(balancesDetailed.ARS).reduce((a, b) => a + b, 0);
+        const saldoUSD = Object.values(balancesDetailed.USD).reduce((a, b) => a + b, 0);
+
+        return {
+            saldoARS,
+            saldoUSD,
+            billeterasDetalle: balancesDetailed
+        };
+    }
+
+    static getVentasStats() {
+        const ventaRepo = new GenericRepository("Clientes Minoristas");
+        const ventaRepoMayorista = new GenericRepository("Clientes Mayoristas");
+
+        const ventasDataMinorista = ventaRepo.findAll();
+        const ventasDataMayorista = ventaRepoMayorista.findAll();
+
+        const ventas = ventasDataMinorista.concat(ventasDataMayorista);
+
+
+        const ventasStats = this._processMetrics(ventas);
+
+        return ventasStats;
+    }
+
+    /**
+     * Invalida la cache
+    */
+    static invalidateCache(CacheKey) {
+        CacheUtil.remove(CacheKey);
+    }
+
+    static _processMetrics(ventas) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+
+        const buckets = {
+            hoy: { total: 0, count: 0, profit: 0 },
+            mes: { total: 0, count: 0, profit: 0 },
+            anio: { total: 0, count: 0, profit: 0 },
+            historico: { total: 0, count: 0, profit: 0 }
+        };
+
+        const vendedoresMap = {};
+
+        ventas.forEach(venta => {
+            const fecha = new Date(venta["Fecha"]).getTime();
+            const vendedor = venta["Auditoría"];
+            const total = Number(venta["Monto"]) || 0;
+            const profit = Number(venta["Profit Bruto"]) || 0;
+
+            buckets.historico.total += total;
+            buckets.historico.count += 1;
+            buckets.historico.profit += profit;
+
+            if (fecha >= startOfDay) {
+                buckets.hoy.total += total;
+                buckets.hoy.count += 1;
+                buckets.hoy.profit += profit;
+            }
+
+            if (fecha >= startOfMonth) {
+                buckets.mes.total += total;
+                buckets.mes.count += 1;
+                buckets.mes.profit += profit;
+            }
+
+            if (fecha >= startOfYear) {
+                buckets.anio.total += total;
+                buckets.anio.count += 1;
+                buckets.anio.profit += profit;
+            }
+
+            if (!vendedoresMap[vendedor]) {
+                vendedoresMap[vendedor] = { total: 0, count: 0, profit: 0 };
+            }
+
+            vendedoresMap[vendedor].total += total;
+            vendedoresMap[vendedor].count++;
+            vendedoresMap[vendedor].profit += profit;
+
+        });
+
+        const rankingVendedores = Object.entries(vendedoresMap)
+            .map(([nombre, estadisticas]) => ({
+                name: nombre,
+                ...estadisticas
+            }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+        const ultimasOperaciones = [...ventas]
+            .sort((a, b) => new Date(b["Fecha"]) - new Date(a["Fecha"]))
+            .slice(0, 10)
+            .map(v => ({
+                id: v.id || v.ID,
+                fecha: v.fecha || v.Fecha,
+                cliente: v["Nombre y Apellido"] || "",
+                tipoProducto: v["Equipo | Producto"] || "",
+                modelo: v["Modelo"] || "",
+                capacidad: v["Tamaño"] || "",
+                color: v["Color"] || "",
+                monto: v.monto || v.Monto,
+                auditoria: v.auditoria || v.Auditoría || "N/A",
+                tipo: "Venta", // Explicitly tag as Venta for the frontend table badge
+                divisa: v.divisa || v.Divisa || "USD"  // Assuming sales are USD based on "Total en Dolares"
+            }));
+
+        const productosMasVendidos = ventas
+            .map(v => v["Equipo | Producto"])
+            .filter(Boolean)
+            .reduce((acc, producto) => {
+                acc[producto] = (acc[producto] || 0) + 1;
+                return acc;
+            }, {});
+
+        const rankingProductos = Object.entries(productosMasVendidos)
+            .map(([producto, cantidad]) => ({
+                name: producto,
+                cantidad,
+                costo: Number(ventas.find(v => v["Equipo | Producto"] === producto)["Costo del Producto"]) || 0,
+                monto: Number(ventas.find(v => v["Equipo | Producto"] === producto)["Monto"]) || 0
+            }))
+            .sort((a, b) => b.cantidad - a.cantidad)
+            .slice(0, 5);
+
+        return {
+            stats: buckets,
+            topVendedores: rankingVendedores,
+            ultimasOperaciones: ultimasOperaciones,
+            rankingProductos: rankingProductos,
+            ultimaModificacion: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Obtiene los datos del dashboard
+    */
+    static getDashboardStats() {
+        const cachedStats = CacheUtil.get(this.STATS_CACHE_KEY);
+        if (cachedStats != null) {
+            return {
+                source: "cache",
+                data: cachedStats
+            }
+        }
+
+        console.log("🐢 [StatisticsService] Cache MISS. Calculando desde cero...");
+        const rawData = DashboardService.getLiveBalances();
+        const ventasStats = DashboardService.getVentasStats();
+
+        const dashboardStats = {
+            ...rawData,
+            ...ventasStats
+        };
+
+        CacheUtil.put(this.STATS_CACHE_KEY, dashboardStats, CACHE_DURATION);
+
+        return {
+            source: "rebuild",
+            data: dashboardStats
+        };
+    }
+
+
+    // PRUEBAS // 
+
+    static getDashboardStatsCached() {
+        const tStart = Date.now();
+
+        // 1️⃣ Intentar leer cache
+        const cached = CacheUtil.get(STATS_CACHE_KEY);
+        if (cached !== null) {
+            return {
+                source: "cache",
+                timings: {
+                    totalMs: Date.now() - tStart
+                },
+                data: cached
+            };
+        }
+
+        // 2️⃣ Cache MISS → recalcular
+        const tCalcStart = Date.now();
+        const stats = DashboardService._buildDashboardStats();
+        const tCalcEnd = Date.now();
+
+        // 3️⃣ Guardar cache
+        CacheUtil.put(STATS_CACHE_KEY, stats, CACHE_DURATION);
+
+        return {
+            source: "rebuild",
+            timings: {
+                calcMs: tCalcEnd - tCalcStart,
+                totalMs: Date.now() - tStart
+            },
+            data: stats
+        };
+    }
+
+    static getDashboardStatsNoCache() {
+        const tStart = Date.now();
+
+        const tCalcStart = Date.now();
+        const stats = DashboardService._buildDashboardStats();
+        const tCalcEnd = Date.now();
+
+        return {
+            source: "no-cache",
+            timings: {
+                calcMs: tCalcEnd - tCalcStart,
+                totalMs: Date.now() - tStart
+            },
+            data: stats
+        };
+    }
+
+    static _buildDashboardStats() {
+        const rawData = DashboardService.getLiveBalances();
+        const ventasStats = DashboardService.getVentasStats();
+
+        return {
+            ...rawData,
+            ...ventasStats
+        };
+    }
+
+    static triggerCacheRebuild(category) {
+
+        if(category === "all" || category === "dashboard") {
+            this.invalidateCache(this.STATS_CACHE_KEY);
+        }
+
+        const stats = this._buildDashboardStats();
+
+        CacheUtil.put(this.STATS_CACHE_KEY, stats, CACHE_DURATION);
+
+        return {
+            success: true,
+            category: category,
+            rebuilt: true,
+            data: stats
+        };
+    }
+
+
 }
