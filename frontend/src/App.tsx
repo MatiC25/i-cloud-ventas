@@ -148,9 +148,7 @@ const App: React.FC = () => {
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <ConfigProvider>
                 <SignedIn>
-                    <AuthProvider>
-                        <AppContent />
-                    </AuthProvider>
+                    <AppContent />
                 </SignedIn>
 
                 <SignedOut>
