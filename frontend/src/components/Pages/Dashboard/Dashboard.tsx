@@ -163,34 +163,6 @@ export function Dashboard() {
                     <p className="text-gray-500 mt-1">Saldos de cuentas y rendimiento operativo.</p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        // onClick={() => loadData(true)}
-                        disabled={refreshing}
-                        className="rounded-full"
-                    >
-                        <Filter size={16} className="mr-2" />
-                        {refreshing ? "Actualizando..." : "Actualizar Cache"}
-                    </Button>
-
-                </div>
-
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                        console.log("Verificando Caché Backend...");
-                        //const status = await checkCacheStatus();
-                        const status: any = await checkCacheStatus();
-                        console.log("Respuesta cruda:", status);
-                        alert(JSON.stringify(status, null, 2));
-                    }}
-                    className="text-xs text-slate-400 hover:text-slate-600"
-                >
-                    Check Cache
-                </Button>
-
             </motion.header>
 
 

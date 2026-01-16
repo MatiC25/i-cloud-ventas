@@ -84,4 +84,24 @@ class ConfigService {
         return { message: "Configuración guardada. El sistema ahora apunta al nuevo Excel." };
     }
 
+    /**
+     * Guarda las credenciales de Facebook recibidas por API.
+     * @param {Object} payload - { fb_token, ad_account_id, sheet_id, admin_key }
+     */
+    static saveFacebookSettings(payload) {
+    const props = PropertiesService.getScriptProperties();
+        if (payload.fb_token) {
+            props.setProperty('FB_ACCESS_TOKEN', payload.fb_token);
+        }
+
+        if (payload.ad_account_id) {
+            props.setProperty('FB_AD_ACCOUNT_ID', payload.ad_account_id);
+        }
+
+        return {
+            message: "Configuración de Facebook actualizada correctamente.",
+            updated_fields: Object.keys(payload).filter(k => k !== 'admin_key')
+        };
+    }
+
 }

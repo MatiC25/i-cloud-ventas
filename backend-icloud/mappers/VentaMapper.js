@@ -184,7 +184,7 @@ class VentaMapper {
             tipoCambio: tipoCambio,
             conversion: conversion,
             costoProducto: costoProd,
-            profit: totalDolares - (costoProd * cantidad), // Use the defined variable
+            profit: totalDolares - (costoProd * cantidad) > 0 ? totalDolares - (costoProd * cantidad) : prod.profit,
             comentarios: raw.transaccion.comentarios,
 
             // Totales

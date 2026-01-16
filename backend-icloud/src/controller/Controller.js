@@ -117,9 +117,35 @@ function doPost(e) {
     const action = request.action;
     const payload = request.payload;
 
+    const ADMIN_ACTIONS = ["save_facebook_config", "check_integrity", "check_facebook_data","test_name_fb"];
+
+    if (ADMIN_ACTIONS.includes(action)) {
+      
+      const MASTER_KEY = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+      
+      if (payload.admin_key !== MASTER_KEY) {
+        throw new Error("Acceso Denegado: Admin Key incorrecta o faltante.");
+      }
+    }
+
 
     if (action === "check_integrity") {
       const result = serviceCheckIntegrity(request.sheetId);
+      return buildResponse("success", result);
+    }
+
+    if (action === "save_facebook_config") {
+      const result = ConfigService.saveFacebookSettings(payload);
+      return buildResponse("success", result);
+    }
+
+    if (action === "check_facebook_data") {
+      const result = FacebookAdsService.dailyHistory();
+      return buildResponse("success", result);
+    }
+
+    if (action === "test_name_fb") {
+      const result = FacebookAdsService.testNameFB();
       return buildResponse("success", result);
     }
 
@@ -479,4 +505,15 @@ function serviceCheckIntegrity(sheetId) {
     changes: log,
     message: log.length > 0 ? log.join("\n") : "Estructura correcta."
   };
+}
+
+function MANUAL_TEST_FACEBOOK() {
+  console.log("🚀 Iniciando secuencia de autorización manual...");
+  const resultado = FacebookAdsService.dailyHistory();
+  console.log("✅ Ejecución terminada. Resultado:", JSON.stringify(resultado));
+}
+
+function FORCE_AUTH() {
+  // Esto no hace nada útil, solo obliga a Google a pedirte permiso
+  UrlFetchApp.fetch("https://www.google.com");
 }

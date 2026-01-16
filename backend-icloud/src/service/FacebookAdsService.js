@@ -11,132 +11,159 @@ class FacebookAdsService {
     static getConfig() {
         const props = PropertiesService.getScriptProperties();
         return {
-            accessToken: props.getProperty('FB_ACCESS_TOKEN') || 'TU_ACCESS_TOKEN_AQUI',
-            adAccountId: props.getProperty('FB_AD_ACCOUNT_ID') || 'act_TU_ID_AQUI', // Debe empezar con 'act_'
-            apiVersion: 'v18.0'
+            accessToken: props.getProperty('FB_ACCESS_TOKEN'),
+            adAccountId: props.getProperty('FB_AD_ACCOUNT_ID'),
+            apiVersion:  props.getProperty('FB_API_VERSION')
         };
     }
 
     /**
-     * Consulta el gasto del día específico o del rango dado.
-     * @param {Date} [startDate] - Fecha inicio (default: hoy).
-     * @param {Date} [endDate] - Fecha fin (default: hoy).
-     * @returns {number} Gasto total en la moneda de la cuenta publicitaria.
-     */
-    static fetchDailySpend(startDate = new Date(), endDate = new Date()) {
-        const config = this.getConfig();
+ * HELPER: Extrae el conteo de mensajes de la lista de 'actions'
+ * Meta devuelve una lista: [{action_type: 'link_click', value: 10}, {action_type: '...messaging...', value: 5}]
+ */
+    static getMessageCount(actionsArray) {
+        if (!actionsArray || !Array.isArray(actionsArray)) return 0;
 
-        if (config.accessToken === 'TU_ACCESS_TOKEN_AQUI') {
-            console.warn("⚠️ FB_ACCESS_TOKEN no configurado. Retornando 0 gasto ficticio.");
-            return 0; // Fallback para evitar errores si no hay credenciales
-        }
+        const msgAction = actionsArray.find(item =>
+            item.action_type === 'onsite_conversion.messaging_conversation_started_7d'
+        );
 
-        const timeRange = {
-            since: Utilities.formatDate(startDate, "GMT", "yyyy-MM-dd"),
-            until: Utilities.formatDate(endDate, "GMT", "yyyy-MM-dd")
-        };
-
-        // Construir URL
-        const url = `https://graph.facebook.com/${config.apiVersion}/${config.adAccountId}/insights?` +
-            `level=account&` +
-            `fields=spend,currency&` +
-            `time_range=${encodeURIComponent(JSON.stringify(timeRange))}&` +
-            `access_token=${config.accessToken}`;
-
-        try {
-            const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-            const json = JSON.parse(response.getContentText());
-
-            if (json.error) {
-                console.error("Error Facebook API:", json.error.message);
-                throw new Error("Facebook API Error: " + json.error.message);
-            }
-
-            if (json.data && json.data.length > 0) {
-                // Facebook devuelve strings, ej: "150.50"
-                return parseFloat(json.data[0].spend) || 0;
-            }
-
-            return 0;
-        } catch (e) {
-            console.error("Excepción en fetchDailySpend:", e);
-            return 0;
-        }
+        return msgAction ? parseInt(msgAction.value) : 0;
     }
 
-    /**
-     * Sincroniza el gasto de AYER (o HOY) al Libro Diario.
-     * Ideal para correr con un Trigger diario a ultima hora o al día siguiente temprano.
-     * @param {boolean} [forceToday] - Si es true, fuerza la carga de hoy.
-     */
-    static syncAdsSpend(forceToday = true) {
-        const dateProcesar = new Date();
-        // Si no forzamos hoy, procesamos ayer (común en cron jobs nocturnos)
-        if (!forceToday) {
-            dateProcesar.setDate(dateProcesar.getDate() - 1);
+    static callMetaApi(datePreset = 'yesterday') {
+        const props = this.getConfig();
+
+        const fields = 'campaign_name,spend,impressions,clicks,cpc,ctr,actions';
+        const url = `https://graph.facebook.com/${props.apiVersion}/${props.adAccountId}/insights?` +
+            `level=campaign&` +
+            `fields=${fields}&` +
+            `date_preset=${datePreset}&` +
+            `access_token=${props.accessToken}`;
+
+        const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+        const json = JSON.parse(response.getContentText());
+
+        if (json.error) {
+            throw new Error(`Meta API Error: ${json.error.message}`);
         }
 
-        const spend = this.fetchDailySpend(dateProcesar, dateProcesar);
-
-        if (spend > 0) {
-            this.registrarGastoEnLibro(spend, dateProcesar);
-            return `Sincronizado gasto de Facebook Ads: $${spend}`;
-        } else {
-            return "Sin gasto publicitario registrado o API no configurada.";
-        }
+        return json.data || [];
     }
 
-    /**
-     * Registra el gasto en la hoja "Libro Diario".
-     * Verifica duplicados para no repetir el gasto del mismo día.
-     */
-    static registrarGastoEnLibro(monto, fecha) {
-        const ss = getDB();
-        let sheet = ss.getSheetByName("Libro Diario");
+    static updateHourlySnapshot() {
+    try {
+        // 1. Pedimos datos de 'today'
+        const campaigns = this.callMetaApi('today');
 
-        if (!sheet) return; // Validación básica
+        // 2. Calculamos totales en memoria (Sumamos todas las campañas)
+        let totalSpend = 0;
+        let totalMessages = 0;
+        let totalClicks = 0;
 
-        // 1. Revisar si ya existe un gasto de "Inversión Publicitaria" para esa fecha
-        const data = sheet.getDataRange().getValues();
-        const headers = GastosMapper.getHeadersPrincipal();
-
-        const idxFecha = headers.indexOf("Fecha");
-        const idxTipo = headers.indexOf("Tipo de Movimiento");
-        const idxDetalle = headers.indexOf("Detalle"); // Opcional, para refinar
-
-        if (idxFecha === -1 || idxTipo === -1) return;
-
-        const fechaStr = Utilities.formatDate(fecha, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
-
-        const yaExiste = data.slice(1).some(row => {
-            const rowDate = row[idxFecha];
-            if (!(rowDate instanceof Date)) return false; // si está vacio
-            const rowDateStr = Utilities.formatDate(rowDate, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
-            const rowTipo = row[idxTipo];
-
-            return rowDateStr === fechaStr && rowTipo === "Inversión Publicitaria";
+        campaigns.forEach(c => {
+            totalSpend += parseFloat(c.spend || 0);
+            totalClicks += parseInt(c.clicks || 0);
+            totalMessages += this.getMessageCount(c.actions);
         });
 
-        if (yaExiste) {
-            console.log("El gasto de Facebook Ads para hoy ya fue registrado.");
-            return;
-        }
+        // Costo por Mensaje Promedio del Día
+        const costPerMessage = totalMessages > 0 ? (totalSpend / totalMessages) : 0;
 
-        // 2. Insertar
-        // Payload simulado para usar el servicio existente o insertar directo
-        // Usamos serviceNuevaOperacion para mantener consistencia de IDs y lógica
-        const payload = {
-            fecha: fecha,
-            detalle: "Gasto Diario Meta Ads",
-            tipo: "Inversión Publicitaria",
-            categoria: "Marketing",
-            monto: monto,
-            divisa: "USD", // Asumimos USD si la cuenta está en USD, o parametrizar
-            destino: "Tarjeta Corporativa", // Default
-            comentarios: "Sincronización Automática API",
-            usuario: "Sistema Bot"
+        const data = {
+            fecha: new Date(),
+            totalSpend,
+            totalMessages,
+            totalClicks,
+            costPerMessage,
         };
 
-        serviceNuevaOperacion(payload);
+        // 3. Escribir en la Sheet del Dashboard
+        const faceRepo = new FacebookRepository();
+        faceRepo.save(data);
+
+    } catch (e) {
+        console.error("Error en Snapshot Horario:", e.message);
     }
+}
+
+    static dailyHistory() {
+        try {
+            // 1. Obtener datos de AYER
+            const campaigns = this.callMetaApi('yesterday');
+
+            if (!campaigns.length) {
+                console.log("No hubo actividad ayer.");
+                return [{
+                    data: "No hay campañas en tu app"
+                }];
+            }
+
+            // 2. Instanciar el repositorio
+            const repo = new HeavyFacebookRepository();
+            let guardados = 0;
+            const datosGuardados = [];
+
+            // 3. Iterar y Transformar (Mapeo API -> Objeto Repository)
+            campaigns.forEach(c => {
+                
+                // Cálculos auxiliares
+                const msgs = this.getMessageCount(c.actions);
+                const spend = parseFloat(c.spend || 0);
+                // Evitar división por cero en Costo Por Mensaje
+                const cpp = msgs > 0 ? (spend / msgs) : 0; 
+
+                // Creamos el objeto plano que espera _GenericRepository.save()
+                // Las llaves (keys) de este objeto serán los Encabezados en el Excel
+                const rowData = {
+                    "Fecha": c.date_start,
+                    "ID_Campaña": c.campaign_id, // Útil tener el ID técnico
+                    "Nombre_Campaña": c.campaign_name,
+                    "Estado": c.status || "",
+                    "Gasto": spend,
+                    "Impresiones": parseInt(c.impressions || 0),
+                    "Clics": parseInt(c.clicks || 0),
+                    "CTR": parseFloat(c.ctr || 0),
+                    "CPC": parseFloat(c.cpc || 0),
+                    "Mensajes (Conv.)": msgs,
+                    "Costo Por Mensaje": cpp
+                };
+
+                // 4. Guardar usando tu repositorio dinámico
+                repo.save(rowData);
+                guardados++;
+                datosGuardados.push(rowData);
+            });
+
+            console.log(`✅ Histórico completado: Se guardaron ${guardados} campañas en HEAVY_FACEBOOK_STATS.`);
+            return datosGuardados;
+
+        } catch (e) {
+            console.error("🔥 Error en Snapshot Diario:", e.message);
+            return [{
+            error: true,
+            mensaje: e.toString(), 
+            linea: e.stack 
+        }];
+        }
+    }
+
+    static testNameFB(){
+
+        const props = this.getConfig();
+
+        const fields = 'id,name';
+        const url = `https://graph.facebook.com/${props.apiVersion}/me?fields=${fields}&access_token=${props.accessToken}`;
+
+        const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+        const json = JSON.parse(response.getContentText());
+
+        if (json.error) {
+            throw new Error(`Meta API Error: ${json.error.message}`);
+        }
+
+        return json || [];
+
+    }
+
 }

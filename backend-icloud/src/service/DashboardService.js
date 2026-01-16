@@ -326,7 +326,7 @@ class DashboardService {
      * Lee la hoja de "Cajas"
     */
     static getLiveBalances() {
-        const cajasRepo = new GenericRepository("Cajas");
+        const cajasRepo = new _GenericRepository("Cajas");
         const cajasData = cajasRepo.findAll();
 
         const balancesDetailed = {
@@ -356,8 +356,8 @@ class DashboardService {
     }
 
     static getVentasStats() {
-        const ventaRepo = new GenericRepository("Clientes Minoristas");
-        const ventaRepoMayorista = new GenericRepository("Clientes Mayoristas");
+        const ventaRepo = new _GenericRepository("Clientes Minoristas");
+        const ventaRepoMayorista = new _GenericRepository("Clientes Mayoristas");
 
         const ventasDataMinorista = ventaRepo.findAll();
         const ventasDataMayorista = ventaRepoMayorista.findAll();
