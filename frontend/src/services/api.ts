@@ -1,4 +1,4 @@
-import { IVenta } from '../types';
+import { IProductConfig, IVenta, IVentaHistorial } from '../types';
 
 export const guardarVenta = async (venta: IVenta): Promise<void> => {
     // Replace with your actual Google Apps Script Web App URL

@@ -1,8 +1,6 @@
 
 const CACHE_KEY = 'DASHBOARD_STATS';
-
 const CACHE_DURATION = 900;
-
 const STATS_CACHE_KEY = 'DASHBOARD_KPI_V2';
 
 class DashboardService {

@@ -1,14 +1,15 @@
 class TaskMapper {
     static getHeaders() {
         return [
-            "ID",
-            "Fecha_Creacion",
-            "Fecha_Objetivo",
-            "Descripcion",
-            "Cliente",
-            "Estado", // Pendiente, Completada, Vencida
-            "Prioridad", // Alta, Media, Baja (Opcional, pero util)
-            "Creado_Por"
+            "id",
+            "tipo",
+            "cliente",
+            "descripcion",
+            "link",
+            "estado",
+            "is_deleted",
+            "created_at",
+            "auditoria"
         ];
     }
 

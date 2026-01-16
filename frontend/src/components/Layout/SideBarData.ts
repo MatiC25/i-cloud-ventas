@@ -61,15 +61,15 @@ export const SideBarData = {
     {
       title: "Admin",
       items: [
-        
+
       ]
     }
   ],
   navSecondary: [
-    // {
-    //   title: "Configuracion",
-    //   url: "",
-    //   icon: IconSettings,
-    // }
+    {
+      title: "Configuracion",
+      url: "configuracion",
+      icon: IconSettings,
+    }
   ]
 }

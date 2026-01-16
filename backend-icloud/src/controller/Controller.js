@@ -85,6 +85,10 @@ function doGet(e) {
       return buildResponse("success", getHistorialDeOperaciones());
     }
 
+    if (action === "getTasks") {
+      return buildResponse("success", TaskService.getTasks());
+    }
+
     throw new Error(`Acción GET desconocida: '${action}'`);
 
   } catch (error) {
@@ -207,28 +211,18 @@ function doPost(e) {
       case "createTask":
         result = TaskService.createTask(payload);
         break;
-
-      case "getPendingTasks":
-        result = TaskService.getPendingTasks();
-        break;
-
-      case "getTodaysTasks":
-        result = TaskService.getTodaysTasks();
-        break;
-
-      case "completeTask":
-        result = TaskService.completeTask(payload.id);
-        break;
-
-      case "reactivateTask":
-        result = TaskService.reactivateTask(payload.id);
+      
+      case "updateTask":
+        result = TaskService.updateTask(payload);
         break;
 
       case "deleteTask":
         result = TaskService.deleteTask(payload.id);
         break;
 
-
+      case "getTasks":
+        result = TaskService.getTasks();
+        break;
         
       // ============================== //
       // Dashboard Service CACHE PRUEBA //

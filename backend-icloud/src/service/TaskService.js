@@ -1,43 +1,94 @@
+
+
 class TaskService {
     constructor() {
         this.repository = new TaskRepository();
     }
 
     static createTask(payload) {
-        // Validate payload
-        if (!payload.Descripcion) throw new Error("La descripción es obligatoria");
+        const id = Utilities.getUuid();
+        const fecha = new Date().toISOString();
 
-        const task = {
-            Descripcion: payload.Descripcion,
-            Fecha_Objetivo: payload.Fecha_Objetivo, // Expecting ISO string or Date
-            Cliente: payload.Cliente || "General",
-            Prioridad: payload.Prioridad || "Media",
-            Creado_Por: payload.Creado_Por || "Sistema"
+        const nuevaFila = {
+            id: id,
+            tipo: payload.tipo || "General",
+            cliente: payload.cliente || "",
+            descripcion: payload.descripcion,
+            link: payload.link || "",
+            estado: "Pendiente",
+            is_deleted: false,
+            created_at: fecha,
+            auditoria: payload.auditoria
         };
 
-        return this.repository.create(task);
+        const taskRepo = new TaskRepository();
+        taskRepo._getSheet();
+        return taskRepo.save(nuevaFila);
     }
 
-    static getPendingTasks() {
-        return this.repository.findPending();
-    }
+    static updateTask(payload) {
+        const ss = getDB();
+        const sheet = ss.getSheetByName("Tareas");
 
-    static getTodaysTasks() {
-        return this.repository.findTodaysTasks();
-    }
+        const data = sheet.getDataRange().getValues();
+        const headers = data.shift();
+        const rowIndex = data.findIndex(row => row[0] === payload.id);
 
-    static completeTask(id) {
-        if (!id) throw new Error("Se requiere el ID de la tarea");
-        return this.repository.complete(id);
-    }
+        if (rowIndex === -1) {
+            throw new Error(`No se encontró la tarea con ID: ${payload.id}`);
+        }
 
-    static reactivateTask(id) {
-        if (!id) throw new Error("Se requiere el ID de la tarea");
-        return this.repository.reactivate(id);
+        const updatedRow = headers.map(header => {
+            // Si la columna existe en el payload, usamos su valor, si no, dejamos el valor original
+            return payload.hasOwnProperty(header) ? payload[header] : data[rowIndex][headers.indexOf(header)];
+        });
+
+        sheet.getRange(rowIndex + 2, 1, 1, updatedRow.length).setValues([updatedRow]);
+
+        return { status: "success", message: "Tarea actualizada" };
     }
 
     static deleteTask(id) {
-        if (!id) throw new Error("Se requiere el ID de la tarea");
-        return this.repository.delete(id);
+        const ss = getDB();
+        const sheet = ss.getSheetByName("Tareas");
+
+        const data = sheet.getDataRange().getValues();
+        const headers = data.shift();
+
+        const rowIndex = data.findIndex(row => row[0] === id);
+
+        if (rowIndex === -1) {
+            throw new Error(`No se encontró la tarea con ID: ${id}`);
+        }
+
+        const isDeletedColIndex = headers.indexOf("is_deleted");
+
+        if (isDeletedColIndex === -1) {
+            throw new Error("No existe la columna is_deleted");
+        }
+
+        sheet
+            .getRange(rowIndex + 2, isDeletedColIndex + 1)
+            .setValue(true);
+
+        return { status: "success", message: "Tarea eliminada" };
+    }
+
+    static getTasks() {
+        const ss = getDB();
+        const sheet = ss.getSheetByName("Tareas");
+
+        const data = sheet.getDataRange().getValues();
+        const headers = data.shift();
+
+        const tareas = data.map(row => {
+            let obj = {};
+            headers.forEach((h, i) => obj[h] = row[i]);
+            return obj;
+        })
+            .filter(t => t.is_deleted !== true && t.is_deleted !== "true")
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        return tareas;
     }
 }

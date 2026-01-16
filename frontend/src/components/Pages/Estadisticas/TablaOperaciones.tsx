@@ -284,7 +284,7 @@ export function TablaOperaciones() {
                         >
                             Reparar Datos
                         </Button>
-                        <NuevaOperacion onRefresh={() => fetchOperaciones(true)} />
+                        {/* <NuevaOperacion  onRefresh={() => fetchOperaciones(true)} /> */}
                     </div>
                 }
             />
