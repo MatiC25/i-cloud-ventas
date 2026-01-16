@@ -67,7 +67,7 @@ export function Combobox({
                         onKeyDown={(e) => {
                             if (e.key === "Tab") {
                                 e.preventDefault()
-                                // Simular ArrowDown para navegar con Tab
+                                // Simulate ArrowDown for intuitive navigation
                                 const event = new KeyboardEvent("keydown", {
                                     key: "ArrowDown",
                                     code: "ArrowDown",

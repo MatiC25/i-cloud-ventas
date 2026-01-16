@@ -3,6 +3,7 @@ import { PlusCircle, Wallet, ArrowRightLeft } from "lucide-react"
 import { useNavigation } from "@/components/Layout/NavigationContext"
 import { useState } from "react"
 import { NuevaOperacion } from "../Estadisticas/NuevaOperacion"
+import { NuevaTask } from "../Tasks/NuevaTask"
 
 type QuickActionsProps = {
     refetchOperaciones?: () => void
@@ -11,6 +12,7 @@ type QuickActionsProps = {
 export function QuickActions({ refetchOperaciones }: QuickActionsProps) {
     const { setActiveTab } = useNavigation()
     const [openNuevaOperacion, setOpenNuevaOperacion] = useState(false)
+    const [openNuevaTask, setOpenNuevaTask] = useState(false);
 
     const actions = [
         {
@@ -23,7 +25,7 @@ export function QuickActions({ refetchOperaciones }: QuickActionsProps) {
             hoverBorder: "hover:border-emerald-500",
             hoverBg: "hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40",
             hoverShadow: "hover:shadow-emerald-500/20",
-            onClick: () => setActiveTab("nueva-venta"),
+            onClick: () => setActiveTab("nueva-venta-minimalista"),
         },
         {
             label: "Registrar Gasto",
@@ -47,7 +49,7 @@ export function QuickActions({ refetchOperaciones }: QuickActionsProps) {
             hoverBorder: "hover:border-blue-500",
             hoverBg: "hover:bg-blue-100/50 dark:hover:bg-blue-900/40",
             hoverShadow: "hover:shadow-blue-500/20",
-            onClick: () => setActiveTab("tasks"),
+            onClick: () => setOpenNuevaTask(true),
         },
     ]
 
@@ -84,6 +86,12 @@ export function QuickActions({ refetchOperaciones }: QuickActionsProps) {
                 onOpenChange={setOpenNuevaOperacion}
                 onRefresh={refetchOperaciones}
             />
+
+            <NuevaTask
+                open={openNuevaTask}
+                onOpenChange={setOpenNuevaTask}
+            />
+
         </>
     )
 }

@@ -18,6 +18,17 @@ interface RecentOperationsTableProps {
     className?: string; // Allow custom styling wrapper
 }
 
+
+const currencyMap: Record<string, string> = {
+    "Pesos Arg": "ARS",
+    "Pesos Argentinos": "ARS",
+    "ARS": "ARS",
+    "USD": "USD",
+    "Dólares": "USD",
+    "Dolares": "USD",
+    "EUR": "EUR",
+}
+
 export function RecentOperationsTable({ operations, className }: RecentOperationsTableProps) {
     // Helper to safely format date
     const formatDate = (dateInput: string | number) => {
@@ -77,7 +88,7 @@ export function RecentOperationsTable({ operations, className }: RecentOperation
                                             <span className="text-xs text-gray-500">{op.auditoria}</span>
                                         </div>
                                     </TableCell>
-                                    
+
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             {op.tipoProducto + " " + op.modelo + " " + op.capacidad + " " + op.color}
@@ -85,9 +96,18 @@ export function RecentOperationsTable({ operations, className }: RecentOperation
                                     </TableCell>
 
                                     <TableCell className="text-right font-semibold">
-                                        <span className={op.tipo === 'Gasto' ? 'text-red-500' : 'text-gray-900 dark:text-white'}>
-                                            {op.tipo === 'Gasto' ? '-' : ''}
-                                            {op.monto?.toLocaleString('en-US', { style: 'currency', currency: op.divisa || 'USD' })}
+                                        <span
+                                            className={
+                                                op.tipo === "Gasto"
+                                                    ? "text-red-500"
+                                                    : "text-gray-900 dark:text-white"
+                                            }
+                                        >
+                                            {op.tipo === "Gasto" ? "-" : ""}
+                                            {op.monto?.toLocaleString("es-AR", {
+                                                style: "currency",
+                                                currency: currencyMap[op.divisa ?? ""] ?? "ARS",
+                                            })}
                                         </span>
                                     </TableCell>
                                 </TableRow>

@@ -106,3 +106,25 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-300 dark:bg-slate-600;
 }
+
+/* Autofill Override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #eff6ff inset !important;
+  /* bg-blue-50 equivalent */
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
+  /* Slate 950/Black... Wait, card is dark:bg-slate-900. slate-900 is #0f172a. But earlier I saw 'dark:bg-[#020617] relative min-h-screen'. And the card is 'dark:bg-slate-900'. But inputs are usually on the Card. So #0f172a is correct. But user said "diferente al resto". Maybe the resto is transparent and showing #0f172a. */
+  /* Let's try #0f172a (Slate 900). */
+  -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}

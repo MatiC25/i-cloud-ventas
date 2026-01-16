@@ -15,7 +15,8 @@ import {
     IDashboardStatsResponse,
     IDashboardCacheEnvelope,
     CacheCategory,
-    DASHBOARD_KEY
+    DASHBOARD_KEY,
+    ITask
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
@@ -42,6 +43,9 @@ const isCacheValid = (key: string) => {
     return (now - (lastFetch[key] || 0)) < CACHE_DURATION;
 };
 
+// ==================== //
+// ====== VENTAS ====== //
+// ==================== //
 
 export const guardarVenta = async (venta: IVenta) => {
     const response = await apiRequest<ISaveVentaResponse>({ action: 'nueva_venta', payload: venta });
@@ -65,6 +69,19 @@ export const deleteVenta = async (id: string) => {
     return response;
 };
 
+export const getVentas = async (limit = 50, forceRefresh = false): Promise<IVentaTabla[]> => {
+    // Nota: El límite podría complicar el caché simple, pero asumimos uso estándar
+    if (!forceRefresh && isCacheValid('ventas') && CACHE.ventas) return CACHE.ventas;
+
+    const rawData = await apiRequest({ action: "getVentas", limit });
+    if (!Array.isArray(rawData)) return [];
+
+    const mapped = rawData.map(adaptarVentaParaTabla);
+    CACHE.ventas = mapped;
+    lastFetch.ventas = Date.now();
+    return mapped;
+}
+
 export const getFormOptions = async (forceRefresh = false) => {
     if (!forceRefresh && isCacheValid('formOptions')) return CACHE.formOptions;
 
@@ -75,6 +92,10 @@ export const getFormOptions = async (forceRefresh = false) => {
     }
     return data;
 }
+
+// ========================== //
+// ====== OPERACIONES ======  //
+// ========================== //
 
 // Obtener configuración dinámica para operaciones (Gastos)
 export const getGastosConfig = async (forceRefresh = false) => {
@@ -88,16 +109,48 @@ export const getGastosConfig = async (forceRefresh = false) => {
     return data;
 }
 
+export const getOperaciones = async (forceRefresh = false): Promise<IOperacion[]> => {
+    if (!forceRefresh && isCacheValid('operaciones')) return CACHE.operaciones;
 
-export const loginWithGoogleSheet = async (email: string, password: string) => {
-    return apiRequest({
-        action: 'login',
-        payload: { email, password }
-    });
-};
+    const rawData = await apiRequest({ action: 'getOperaciones' });
+    if (!Array.isArray(rawData)) return [];
+
+    const mapped = rawData.map(adaptarOperacionParaTabla);
+    CACHE.operaciones = mapped;
+    lastFetch.operaciones = Date.now();
+    return mapped;
+}
+
+export const saveOperacion = async (operacion: any) => {
+    const response = await apiRequest({ action: 'nueva_operacion', payload: operacion });
+
+    if (response) {
+        triggerCacheRebuild('dashboard')
+            .then(() => {
+                mutate(DASHBOARD_KEY);
+            })
+            .catch(err => console.error("Error en background:", err));
+    }
+
+    return response;
+}
+
+export const updateOperacion = async (operacion: IOperacion) => {
+    return apiRequest({ action: 'update_operacion', payload: operacion });
+}
+
+export const deleteOperacion = async (id: string) => {
+    return apiRequest({ action: 'delete_operacion', payload: { id } });
+}
+
 
 export const checkSpreadsheetIntegrity = (sheetId: string) =>
     apiRequest({ action: 'check_integrity', sheetId });
+
+
+// ==================== //
+// ====== ADMIN ======  //
+// ==================== //
 
 export const saveNewProduct = (newProd: IProducto) =>
     apiRequest({ action: 'addProduct', payload: newProd });
@@ -118,66 +171,17 @@ export const getProductosConfig = async (forceRefresh = false): Promise<IConfigP
 };
 
 
-export const getVentas = async (limit = 50, forceRefresh = false): Promise<IVentaTabla[]> => {
-    // Nota: El límite podría complicar el caché simple, pero asumimos uso estándar
-    if (!forceRefresh && isCacheValid('ventas') && CACHE.ventas) return CACHE.ventas;
-
-    const rawData = await apiRequest({ action: "getVentas", limit });
-    if (!Array.isArray(rawData)) return [];
-
-    const mapped = rawData.map(adaptarVentaParaTabla);
-    CACHE.ventas = mapped;
-    lastFetch.ventas = Date.now();
-    return mapped;
-}
-
-export const getOperaciones = async (forceRefresh = false): Promise<IOperacion[]> => {
-    if (!forceRefresh && isCacheValid('operaciones')) return CACHE.operaciones;
-
-    const rawData = await apiRequest({ action: 'getOperaciones' });
-    if (!Array.isArray(rawData)) return [];
-
-    const mapped = rawData.map(adaptarOperacionParaTabla);
-    CACHE.operaciones = mapped;
-    lastFetch.operaciones = Date.now();
-    return mapped;
-}
-
-// export const saveOperacion = async (operacion: any) => {
-//     const response = await apiRequest({ action: 'nueva_operacion', payload: operacion });
-//     if (response) {
-
-//         mutate('dashboard');
-//         await invalidateCache('dashboard');
-//     }
-//     return response;
-// }
-
-export const saveOperacion = async (operacion: any) => {
-    const response = await apiRequest({ action: 'nueva_operacion', payload: operacion });
-    
-    if (response) {
-        triggerCacheRebuild('dashboard')
-            .then(() => {
-                mutate(DASHBOARD_KEY); 
-            })
-            .catch(err => console.error("Error en background:", err));
-    }
-
-    return response;
-}
-
-export const updateOperacion = async (operacion: IOperacion) => {
-    return apiRequest({ action: 'update_operacion', payload: operacion });
-}
-
-export const deleteOperacion = async (id: string) => {
-    return apiRequest({ action: 'delete_operacion', payload: { id } });
-}
-
 export const triggerCacheRebuild = async (category: CacheCategory) => {
     return apiRequest({ action: 'triggerCacheRebuild', payload: { category } });
 }
+
+export const checkCacheStatus = async () => {
+    return apiRequest({ action: 'checkCacheStatus' });
+}
+
+// ======================== //
+// ====== DASHBOARD ======  //
+// ======================== //
 
 
 export const getLiveBalances = async () => {
@@ -188,6 +192,23 @@ export const getDashboardStats = async () => {
     return apiRequest<IDashboardCacheEnvelope>({ action: 'getDashboardStats' });
 }
 
-export const checkCacheStatus = async () => {
-    return apiRequest({ action: 'checkCacheStatus' });
+
+// ==================== //
+// ====== TAREAS ====== //
+// ==================== //
+
+export const createTask = async (task: ITask) => {
+    return apiRequest({ action: 'createTask', payload: task });
+}
+
+export const updateTask = async (task: ITask) => {
+    return apiRequest({ action: 'updateTask', payload: task });
+}
+
+export const deleteTask = async (id: string) => {
+    return apiRequest({ action: 'deleteTask', payload: { id } });
+}
+
+export const getTasks = async (): Promise<ITask[]> => {
+    return apiRequest<ITask[]>({ action: 'getTasks' });
 }

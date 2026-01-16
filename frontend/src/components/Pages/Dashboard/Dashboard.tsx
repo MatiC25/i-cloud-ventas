@@ -280,7 +280,7 @@ export function Dashboard() {
                             <div>
                                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Dólares</h3>
                                 <div className="space-y-3">
-                                     {seccionesCuentas.usd.map((cuenta, i) => (
+                                    {seccionesCuentas.usd.map((cuenta, i) => (
                                         <AccountItem
                                             key={cuenta.name}
                                             name={cuenta.name}

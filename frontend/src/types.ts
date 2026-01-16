@@ -333,9 +333,29 @@ export interface RankingProductos {
     monto: number;
 }
 
+
+// ==================== //
+// == TAREAS == //
+// ==================== //
+
+export interface ITask {
+    id: string;
+    tipo: string;
+    cliente: string;
+    descripcion: string;
+    link: string;
+    estado: string;
+    is_deleted: boolean;
+    created_at: string;
+    auditoria: string;
+}
+
+export type ITaskUI = ITask & { isTemp?: boolean };
+
 // ==================== //
 // == CATEGORIA DE CACHE == //
 // ==================== //
 export type CacheCategory = 'dashboard' | 'ventas' | 'operaciones' | 'config' | 'all';
 
 export const DASHBOARD_KEY = 'dashboard';
+export const TASKS_KEY = 'tasks_list'; 

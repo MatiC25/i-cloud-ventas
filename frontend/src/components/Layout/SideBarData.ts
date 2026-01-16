@@ -33,7 +33,7 @@ export const SideBarData = {
         },
         {
           title: "Nueva Venta",
-          url: "nueva-venta",
+          url: "nueva-venta-minimalista",
           icon: IconShoppingCartDollar,
         },
         {
@@ -52,12 +52,7 @@ export const SideBarData = {
           icon: IconChartBar,
         },
         {
-          title: "Últimas Ventas",
-          url: "ultimas-ventas",
-          icon: IconListDetails,
-        },
-        {
-          title: "Historial Total",
+          title: "Historial",
           url: "historial",
           icon: IconReport,
         }
@@ -71,10 +66,10 @@ export const SideBarData = {
     }
   ],
   navSecondary: [
-    {
-      title: "Configuracion",
-      url: "advanced",
-      icon: IconSettings,
-    }
+    // {
+    //   title: "Configuracion",
+    //   url: "",
+    //   icon: IconSettings,
+    // }
   ]
 }

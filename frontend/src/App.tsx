@@ -1,7 +1,6 @@
 import React from 'react';
 import { AuthProvider } from './components1/Context/AuthContext';
 import { ConfigProvider } from './components1/Admin/ConfigContext';
-import { useState } from 'react';
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Layout/SideBar";
@@ -9,13 +8,10 @@ import { ThemeProvider } from "@/components/ThemeProvider/ThemeProvider";
 import { ModeToggle } from "@/components/ThemeProvider/ModeToggle";
 import { Dashboard } from "@/components/Pages/Dashboard/Dashboard";
 import { Estadisticas } from "@/components/Pages/Estadisticas/Estadisticas";
-import { NuevaVenta } from "@/components/Pages/Ventas/NuevaVenta";
 import { UltimasVentas } from "@/components/Pages/Ventas/UltimasVentas";
 import { HistorialVentas } from "@/components/Pages/Ventas/HistorialVentas";
 import { Toaster } from "@/components/ui/sonner";
 import { SystemSettings } from './components1/Admin/SystemSettings';
-import { TaskManager } from "@/components/Pages/Tasks/TaskManager";
-import { useTaskPolling } from "@/hooks/useTaskPolling";
 import { SideBarData } from "@/components/Layout/SideBarData";
 import { Bell, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +24,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TasksPage } from './components/Pages/Tasks/TasksPage';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
 
 const AppLayout: React.FC = () => {
     const { activeTab, setActiveTab } = useNavigation();
-    const { tasks } = useTaskPolling(); // Global polling for header notification
-    const pendingTasks = tasks.filter(t => t.Estado === 'Pendiente');
-    const pendingCount = pendingTasks.length;
 
     // Calculate Breadcrumb
     const activeGroup = SideBarData.navGroups.find(g => g.items.some(i => i.url === activeTab));
@@ -65,7 +59,7 @@ const AppLayout: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <DropdownMenu>
+                        {/* <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <div className="relative cursor-pointer">
                                     <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
@@ -109,7 +103,8 @@ const AppLayout: React.FC = () => {
                                     </Button>
                                 </div>
                             </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu> */}
+                        <TaskDrawer />
                         <ModeToggle />
                     </div>
                 </div>
@@ -117,12 +112,11 @@ const AppLayout: React.FC = () => {
                 {/* Área de contenido */}
                 <div className="p-8">
                     {activeTab === "dashboard" && <Dashboard />}
-                    {activeTab === "nueva-venta" && <NuevaVenta />}
+                    {activeTab === "nueva-venta-minimalista" && <NuevaVentaMinimalista />}
+                    {activeTab === "tasks" && <TasksPage />}
                     {activeTab === "estadisticas" && <Estadisticas />}
                     {activeTab === "ultimas-ventas" && <UltimasVentas />}
                     {activeTab === "historial" && <HistorialVentas />}
-
-                    {activeTab === "tasks" && <TaskManager />}
                     {activeTab === "advanced" && <SystemSettings />}
                 </div>
 
@@ -141,6 +135,8 @@ const AppContent: React.FC = () => {
 };
 
 import { ClerkProvider, SignedIn, SignedOut, SignIn, UserButton } from "@clerk/clerk-react";
+import { NuevaVentaMinimalista } from './components/Pages/Ventas/DatosMinimalista/NuevaVentaMinimalista';
+import { TaskDrawer } from './components/Pages/Tasks/TaskDrawer';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
