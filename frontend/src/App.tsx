@@ -1,5 +1,4 @@
 import React from 'react';
-import { AuthProvider } from './components1/Context/AuthContext';
 import { ConfigProvider } from './components1/Admin/ConfigContext';
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
