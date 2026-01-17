@@ -88,7 +88,8 @@ class VentaService {
           divisa: pago.divisa,
           destino: pago.destino || "A confirmar", // Por defecto a Caja, o podría venir del pago
           comentarios: `Tipo Pago: ${pago.tipo || ''} - Cambio: ${pago.tipoCambio || 1}`,
-          auditoria: usuarioLogueado
+          auditoria: usuarioLogueado,
+          id: masterId
         };
 
         const rowData = GastosMapper.toExcel(operacionDto);

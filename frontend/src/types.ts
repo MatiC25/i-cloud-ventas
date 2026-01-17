@@ -106,10 +106,7 @@ export interface IVentaTabla {
     profit: number;
     costo: number;
     cantidad: number;
-
-    // Expand details
-    email?: string;
-    detallePago?: string;
+    totalPesos: number;
 }
 
 export const adaptarVentaParaTabla = (row: any): IVentaTabla => {
@@ -135,6 +132,7 @@ export const adaptarVentaParaTabla = (row: any): IVentaTabla => {
         profit: Number(row["Profit Bruto"]) || 0,
         costo: Number(row["Costo del Producto"]) || 0, // Ajustar nombre columna si difiere
         cantidad: Number(row["Cantidad"]) || 1,
+        totalPesos: Number(row["Total en Pesos"]) || 0,
 
         estado: row["Estado"] || "Finalizado"
     };
@@ -268,8 +266,8 @@ export interface IBalanceResponse {
 // ==================== //
 
 export interface IDashboardCacheEnvelope {
-  source: "cache" | "rebuild";
-  data: IDashboardStatsResponse;
+    source: "cache" | "rebuild";
+    data: IDashboardStatsResponse;
 }
 
 export interface IDashboardStatsResponse {
@@ -326,6 +324,12 @@ export interface OperacionReciente {
     tipo?: "Venta" | "Gasto";
 }
 
+export interface IRecentOperations {
+    Minorista: IVentaHistorial[];
+    Mayorista: IVentaHistorial[];
+    Gasto: IOperacion[];
+}
+
 export interface RankingProductos {
     name: string;
     cantidad: number;
@@ -358,7 +362,7 @@ export type ITaskUI = ITask & { isTemp?: boolean };
 export type CacheCategory = 'dashboard' | 'ventas' | 'operaciones' | 'config' | 'all';
 
 export const DASHBOARD_KEY = 'dashboard';
-export const TASKS_KEY = 'tasks_list'; 
+export const TASKS_KEY = 'tasks_list';
 export const CONFIG_KEY = 'system-config-v1';
 
 

@@ -16,15 +16,23 @@ import { useUser } from "@clerk/clerk-react"
 import { OperacionForm, OperacionFormData } from "./OperacionForm"
 
 export function NuevaOperacion({
-    open,
-    onOpenChange,
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
     onRefresh,
+    trigger
 }: {
-    open: boolean
-    onOpenChange: (open: boolean) => void
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
     onRefresh?: () => void
+    trigger?: React.ReactNode
 }) {
     const { user } = useUser()
+    const [internalOpen, setInternalOpen] = useState(false)
+
+    // Determine if controlled or uncontrolled
+    const isControlled = controlledOpen !== undefined && setControlledOpen !== undefined
+    const open = isControlled ? controlledOpen : internalOpen
+    const onOpenChange = isControlled ? setControlledOpen : setInternalOpen
 
     const onSubmit = async (values: OperacionFormData) => {
         const payload = {
@@ -49,6 +57,7 @@ export function NuevaOperacion({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
+            {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Registrar Operación</DialogTitle>

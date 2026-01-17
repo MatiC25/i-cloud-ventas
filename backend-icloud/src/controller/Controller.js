@@ -66,30 +66,41 @@ function doGet(e) {
   try {
     const action = e.parameter.action;
 
-    if (action === "getOptions") {
-      const result = serviceGetOptions();
-      return buildResponse("success", result);
+    let result = {};
+
+    switch (action) {
+      case "getOptions":
+        result = serviceGetOptions();
+        break;
+
+      case "getLastSales":
+        result = serviceGetLastSales();
+        break;
+      case "getVentas":
+        result = serviceGetLastSales();
+        break;
+      case "getOperaciones":
+        result = serviceGetLastSales();
+        break;
+      case "getTasks":
+        result = serviceGetLastSales();
+        break;
+
+      // ================= //
+      // Agregador Service //
+      // ================= //
+
+      case "getRecentOperations":
+        const limit = e.parameter.limit ? parseInt(e.parameter.limit) : 50;
+        result = AgregadorService.getRecentOperations(limit);
+        break;
+
+      case "getRecentOperationsSorted":
+        result = AgregadorService.getRecentOperationsSorted();
+        break;
     }
 
-
-    if (action === "getLastSales") {
-      return buildResponse("success", serviceGetLastSales());
-    }
-
-    if (action === "getVentas") {
-      const repo = new VentaRepository();
-      return buildResponse("success", repo.findAll());
-    }
-
-    if (action === "getOperaciones") {
-      return buildResponse("success", getHistorialDeOperaciones());
-    }
-
-    if (action === "getTasks") {
-      return buildResponse("success", TaskService.getTasks());
-    }
-
-    throw new Error(`Acción GET desconocida: '${action}'`);
+    return buildResponse("success", result);
 
   } catch (error) {
     return buildResponse("error", error.toString());
@@ -294,6 +305,22 @@ function doPost(e) {
 
       case "triggerCacheRebuild":
         result = DashboardService.triggerCacheRebuild(payload.category);
+        break;
+
+      // ============================== //
+      // Agregador Service //
+      // ============================== //
+
+      case "getRecentOperations":
+        result = AgregadorService.getRecentOperations();
+        break;
+
+      case "getRecentOperationsSorted":
+        result = AgregadorService.getRecentOperationsSorted();
+        break;
+
+      case "invalidateAgregadorCache":
+        result = AgregadorService.invalidateCache();
         break;
 
       default:

@@ -3,8 +3,9 @@ const SHEET = {
     CLIENTES_MINORISTAS: "Clientes Minoristas",
     CLIENTES_MAYORISTAS: "Clientes Mayoristas",
     STOCK: "Stock",
-    CONFIG: "Config",
-    USUARIOS: "Usuarios",
-    LOGS: "_LOGS"
+    CONFIG_GASTOS: "Config_Gastos",
+    CONFIG_PRODUCTOS: "Config_Productos",
+    GASTOS: "Libro Diario",
+    CAJAS: "Cajas"
 };
 

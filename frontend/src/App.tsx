@@ -9,6 +9,7 @@ import { Dashboard } from "@/components/Pages/Dashboard/Dashboard";
 import { Estadisticas } from "@/components/Pages/Estadisticas/Estadisticas";
 import { UltimasVentas } from "@/components/Pages/Ventas/UltimasVentas";
 import { HistorialVentas } from "@/components/Pages/Ventas/HistorialVentas";
+import { HistorialCompleto } from "@/components/Pages/Historial/HistorialCompleto";
 import { Toaster } from "@/components/ui/sonner";
 import { SystemSettings } from './components1/Admin/SystemSettings';
 import { SideBarData } from "@/components/Layout/SideBarData";
@@ -101,6 +102,7 @@ const AppLayout: React.FC = () => {
                     {activeTab === "estadisticas" && <Estadisticas />}
                     {activeTab === "ultimas-ventas" && <UltimasVentas />}
                     {activeTab === "historial" && <HistorialVentas />}
+                    {activeTab === "historial-completo" && <HistorialCompleto />}
                     {activeTab === "advanced" && <SystemSettings />}
                     {activeTab === "admin-panel" && (user?.publicMetadata.role === "admin" ? <AdminPanel /> : <div>Acceso denegado</div>)}
                 </div>

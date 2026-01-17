@@ -51,6 +51,7 @@ interface DataTableProps<TData, TValue> {
     onRefresh?: () => void
     toolbarActions?: React.ReactNode
     title?: string // New prop
+    defaultOpen?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -60,6 +61,7 @@ export function DataTable<TData, TValue>({
     onRefresh,
     toolbarActions,
     title = "Tabla de Datos", // Default title
+    defaultOpen = true,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -67,7 +69,7 @@ export function DataTable<TData, TValue>({
     const [rowSelection, setRowSelection] = React.useState({})
     const [globalFilter, setGlobalFilter] = React.useState("")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
-    const [isExpanded, setIsExpanded] = React.useState(true) // Expanded by default
+    const [isExpanded, setIsExpanded] = React.useState(defaultOpen) // Expanded by default based on prop
 
     // Custom filter function for dates
     React.useEffect(() => {

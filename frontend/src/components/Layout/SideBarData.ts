@@ -73,8 +73,8 @@ export const SideBarData: SideBarDataType = {
         },
         {
           title: "Historial",
-          url: "historial",
-          icon: IconReport,
+          url: "historial-completo",
+          icon: IconFileDescription,
         }
       ]
     },

@@ -25,7 +25,6 @@ class VentaMapper {
             "Envío | Retiro",
             "Monto",
             "Divisa",
-            "Método de Pago",
             // --- PARTE DE PAGO ---
             "Equipo en parte de pago",
             "Modelo del equipo",
@@ -74,10 +73,9 @@ class VentaMapper {
             "IMEI | Serial": dto.imei,
 
             // --- TRANSACCIÓN ---
-            "Envio | Retiro": dto.envioRetiro,
+            "Envío | Retiro": dto.envioRetiro,
             "Monto": dto.monto,
             "Divisa": dto.divisa,
-            "Método de Pago": dto.metodoPago,
 
             // --- PARTE DE PAGO ---
             "Equipo en parte de pago": dto.ppTipo || "",

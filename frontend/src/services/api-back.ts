@@ -17,7 +17,8 @@ import {
     CacheCategory,
     DASHBOARD_KEY,
     ITask,
-    IFacebookConfig
+    IFacebookConfig,
+    IRecentOperations
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
@@ -142,6 +143,10 @@ export const updateOperacion = async (operacion: IOperacion) => {
 
 export const deleteOperacion = async (id: string) => {
     return apiRequest({ action: 'delete_operacion', payload: { id } });
+}
+
+export const getRecentOperations = async (limit = 50) => {
+    return apiRequest<IRecentOperations>({ action: 'getRecentOperations', limit });
 }
 
 
