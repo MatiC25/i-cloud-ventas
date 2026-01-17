@@ -359,3 +359,16 @@ export type CacheCategory = 'dashboard' | 'ventas' | 'operaciones' | 'config' | 
 
 export const DASHBOARD_KEY = 'dashboard';
 export const TASKS_KEY = 'tasks_list'; 
+export const CONFIG_KEY = 'system-config-v1';
+
+
+// ==================== //
+// == FACEBOOK == //
+// ==================== //
+
+export interface IFacebookConfig {
+    api_version: string;
+    ad_account_id: string;
+    fb_token: string;
+}
+

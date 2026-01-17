@@ -16,7 +16,8 @@ import {
     IDashboardCacheEnvelope,
     CacheCategory,
     DASHBOARD_KEY,
-    ITask
+    ITask,
+    IFacebookConfig
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
@@ -212,3 +213,20 @@ export const deleteTask = async (id: string) => {
 export const getTasks = async (): Promise<ITask[]> => {
     return apiRequest<ITask[]>({ action: 'getTasks' });
 }
+
+// ====================== //
+// ====== FACEBOOK ====== //
+// ====================== //
+
+export const testFacebookName = async (sessionId: string) => {
+    return apiRequest({ action: 'test_name_fb', payload: { sessionId } });
+}
+
+export const checkFacebookData = async (sessionId: string) => {
+    return apiRequest({ action: 'check_facebook_data', payload: { sessionId } });
+}
+
+export const saveFacebookConfig = async (config: IFacebookConfig, sessionId: string) => {
+    return apiRequest({ action: 'save_facebook_config', payload: config, sessionId: sessionId });
+}
+

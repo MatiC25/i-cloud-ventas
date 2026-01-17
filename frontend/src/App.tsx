@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ConfigProvider } from './components1/Admin/ConfigContext';
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -26,13 +26,43 @@ import {
 import { TasksPage } from './components/Pages/Tasks/TasksPage';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
+import { AdminPanel } from './components/Pages/AdminPanel/adminPanel';
+import { useUser } from "@clerk/clerk-react";
 
 const AppLayout: React.FC = () => {
     const { activeTab, setActiveTab } = useNavigation();
+    const { user, isLoaded, isSignedIn } = useUser();
+
+
+    const filteredSideBarData = useMemo(() => {
+        const isAdmin = user?.publicMetadata?.role === "admin";
+
+        return {
+            ...SideBarData,
+            // Filtramos los grupos principales
+            navGroups: SideBarData.navGroups.map(group => ({
+                ...group,
+                items: group.items.filter(item => {
+                    // Si es "admin-panel" (o tiene la flag requiresAdmin), revisamos el rol
+                    if (item.url === "admin-panel" || item.requiresAdmin) {
+                        return isAdmin;
+                    }
+                    return true;
+                })
+            })),
+            // Filtramos el menú secundario
+            navSecondary: SideBarData.navSecondary.filter(item => {
+                if (item.url === "admin-panel" || item.requiresAdmin) {
+                    return isAdmin;
+                }
+                return true;
+            })
+        };
+    }, [user, isLoaded]);
 
     // Calculate Breadcrumb
-    const activeGroup = SideBarData.navGroups.find(g => g.items.some(i => i.url === activeTab));
-    const activeItem = activeGroup?.items.find(i => i.url === activeTab) || SideBarData.navSecondary.find(i => i.url === activeTab);
+    const activeGroup = filteredSideBarData.navGroups.find(g => g.items.some(i => i.url === activeTab));
+    const activeItem = activeGroup?.items.find(i => i.url === activeTab) || filteredSideBarData.navSecondary.find(i => i.url === activeTab);
 
     return (
         <SidebarProvider>
@@ -58,51 +88,6 @@ const AppLayout: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <div className="relative cursor-pointer">
-                                    <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                                    {pendingCount > 0 && (
-                                        <Badge className="absolute -top-2 -right-2 px-1 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] bg-red-500 text-white border-none">
-                                            {pendingCount}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-80">
-                                <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <div className="max-h-[300px] overflow-y-auto">
-                                    {pendingCount === 0 ? (
-                                        <div className="p-4 text-center text-sm text-muted-foreground">
-                                            No tienes tareas pendientes.
-                                        </div>
-                                    ) : (
-                                        pendingTasks.slice(0, 5).map((task, i) => (
-                                            <DropdownMenuItem key={i} className="p-2 cursor-pointer focus:bg-accent focus:text-accent-foreground" onClick={() => setActiveTab("tasks")}>
-                                                <div className="flex flex-col w-full gap-1 p-3 rounded-md bg-secondary/30 border border-border/50 hover:bg-secondary/50 hover:border-blue-500/30 transition-all">
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="font-bold text-sm text-primary">{task.Cliente}</span>
-                                                        <span className="text-[10px] font-mono text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded border border-border/50">
-                                                            {new Date(task.Fecha_Objetivo).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-xs text-muted-foreground line-clamp-2 leading-snug">
-                                                        {task.Descripcion}
-                                                    </span>
-                                                </div>
-                                            </DropdownMenuItem>
-                                        ))
-                                    )}
-                                </div>
-                                <DropdownMenuSeparator />
-                                <div className="p-2">
-                                    <Button variant="ghost" className="w-full text-xs h-8" onClick={() => setActiveTab("tasks")}>
-                                        Ver todas las tareas
-                                    </Button>
-                                </div>
-                            </DropdownMenuContent>
-                        </DropdownMenu> */}
                         <TaskDrawer />
                         <ModeToggle />
                     </div>
@@ -117,6 +102,7 @@ const AppLayout: React.FC = () => {
                     {activeTab === "ultimas-ventas" && <UltimasVentas />}
                     {activeTab === "historial" && <HistorialVentas />}
                     {activeTab === "advanced" && <SystemSettings />}
+                    {activeTab === "admin-panel" && (user?.publicMetadata.role === "admin" ? <AdminPanel /> : <div>Acceso denegado</div>)}
                 </div>
 
             </main>

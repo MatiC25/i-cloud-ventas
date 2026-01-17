@@ -16,7 +16,27 @@ import {
   IconShoppingCartDollar
 } from "@tabler/icons-react"
 
-export const SideBarData = {
+interface NavItem {
+  title: string;
+  url: string;
+  icon: any; // Puedes usar React.ElementType si quieres ser más estricto
+  requiresAdmin?: boolean; // <--- El signo '?' lo hace opcional
+}
+
+interface SideBarDataType {
+  user: {
+    name: string;
+    email: string;
+    avatar: string;
+  };
+  navGroups: {
+    title: string;
+    items: NavItem[];
+  }[];
+  navSecondary: NavItem[];
+}
+
+export const SideBarData: SideBarDataType = {
   user: {
     name: "shadcn",
     email: "m@example.com",
@@ -61,7 +81,12 @@ export const SideBarData = {
     {
       title: "Admin",
       items: [
-
+        {
+          title: "Admin",
+          url: "admin-panel",
+          icon: IconSettings,
+          requiresAdmin: true
+        }
       ]
     }
   ],
@@ -70,6 +95,7 @@ export const SideBarData = {
       title: "Configuracion",
       url: "configuracion",
       icon: IconSettings,
+      requiresAdmin: true
     }
   ]
 }

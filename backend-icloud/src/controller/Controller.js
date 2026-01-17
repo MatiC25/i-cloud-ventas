@@ -117,15 +117,17 @@ function doPost(e) {
     const action = request.action;
     const payload = request.payload;
 
-    const ADMIN_ACTIONS = ["save_facebook_config", "check_integrity", "check_facebook_data","test_name_fb"];
+    const ADMIN_ACTIONS = ["save_facebook_config", "check_integrity", "check_facebook_data", "test_name_fb"];
 
     if (ADMIN_ACTIONS.includes(action)) {
-      
-      const MASTER_KEY = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-      
-      if (payload.admin_key !== MASTER_KEY) {
-        throw new Error("Acceso Denegado: Admin Key incorrecta o faltante.");
+
+      const validacion = ValidadorService.validarAdminClerk(request.sessionId);
+
+      if (!validacion.esAdmin) {
+        throw new Error(`Acceso Denegado: ${validacion.error || 'No tienes permisos de administrador.'}`);
       }
+
+      Logger.log(`Acción Admin '${action}' autorizada para usuario: ${validacion.userId}`);
     }
 
 
@@ -237,7 +239,7 @@ function doPost(e) {
       case "createTask":
         result = TaskService.createTask(payload);
         break;
-      
+
       case "updateTask":
         result = TaskService.updateTask(payload);
         break;
@@ -249,7 +251,7 @@ function doPost(e) {
       case "getTasks":
         result = TaskService.getTasks();
         break;
-        
+
       // ============================== //
       // Dashboard Service CACHE PRUEBA //
       // ============================== //
@@ -285,7 +287,7 @@ function doPost(e) {
       case "getDashboardStatsCached":
         result = DashboardService.getDashboardStatsCached();
         break;
-      
+
       case "getDashboardStatsNoCache":
         result = DashboardService.getDashboardStatsNoCache();
         break;

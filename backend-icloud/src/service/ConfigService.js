@@ -98,6 +98,10 @@ class ConfigService {
             props.setProperty('FB_AD_ACCOUNT_ID', payload.ad_account_id);
         }
 
+        if (payload.api_version) {
+            props.setProperty('FB_API_VERSION', payload.api_version);
+        }
+
         return {
             message: "Configuración de Facebook actualizada correctamente.",
             updated_fields: Object.keys(payload).filter(k => k !== 'admin_key')

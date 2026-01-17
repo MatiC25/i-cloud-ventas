@@ -60,7 +60,7 @@ export function DatosTransaccionMinimalista({ formConfig }: IDatosTransaccionPro
 
                 <div className="space-y-4">
                     {fields.map((field, index) => (
-                        <div key={field.id} className="grid grid-cols-12 gap-4">
+                        <div key={field.id} className="grid grid-cols-12 gap-4 relative group">
                             {/* Remove Button */}
                             {fields.length > 1 && (
                                 <Button

@@ -10,13 +10,32 @@ import { Button } from "@/components/ui/button"
 import { NuevaTask } from "./NuevaTask"
 import { TaskList } from "./TaskList"
 import { ITaskUI } from '@/types';
+import { motion, Variants } from "framer-motion";
 // Key para el caché de SWR (puede ser cualquier string único)
 
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1, // Efecto cascada entre elementos
+            delayChildren: 0.1
+        }
+    }
+};
 
+const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { type: "spring", stiffness: 50, damping: 15 }
+    }
+};
 
 export function TasksPage() {
     const { mutate } = useSWRConfig();
-    const [openNuevaTask, setOpenNuevaTask] = useState(false)
+    // Removed unused state openNuevaTask
     const [modalOpen, setModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<ITaskUI | null>(null);
 
@@ -121,25 +140,54 @@ export function TasksPage() {
 
     // --- RENDER ---
     return (
-        <div className="p-6 max-w-5xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Tablero de Tareas</h1>
+        <motion.div className="p-6 max-w-5xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
 
-                <Button onClick={() => setOpenNuevaTask(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
-                </Button>
-            </div>
+            <motion.header className="flex justify-between items-center mb-6">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h1 className="text-2xl font-bold">Tablero de Tareas</h1>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Button onClick={handleNewClick}>
+                        <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
+                    </Button>
+                </motion.div>
+            </motion.header>
 
             {/* COMPONENTE DEL MODAL */}
-            <NuevaTask
-                open={modalOpen}
-                onOpenChange={setModalOpen}
-                taskToEdit={taskToEdit}
-            />
+            <motion.div
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <NuevaTask
+                    open={modalOpen}
+                    onOpenChange={setModalOpen}
+                    taskToEdit={taskToEdit}
+                />
+            </motion.div>
 
-            <TaskList tasks={tasks || []} onToggleStatus={handleToggleStatus} onDelete={handleDelete} onEdit={handleEditClick}/>
-           
-        </div>
+            <motion.div
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <TaskList tasks={tasks || []} onToggleStatus={handleToggleStatus} onDelete={handleDelete} onEdit={handleEditClick} />
+            </motion.div>
+
+        </motion.div>
     );
 }
 
