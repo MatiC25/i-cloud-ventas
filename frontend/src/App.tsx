@@ -25,9 +25,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TasksPage } from './components/Pages/Tasks/TasksPage';
+import { AdminPanel } from './components/Pages/AdminPanel/AdminPanel';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
-import { AdminPanel } from './components/Pages/AdminPanel/adminPanel';
 import { useUser } from "@clerk/clerk-react";
 
 const AppLayout: React.FC = () => {

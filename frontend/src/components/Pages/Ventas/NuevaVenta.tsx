@@ -9,10 +9,8 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { IFormConfig } from "@/types"
 import { guardarVenta, getFormOptions, getGastosConfig, getProductosConfig, triggerCacheRebuild } from "@/services/api-back"
-import { generarPDFVenta } from "@/utils/pdfGenerator"
+
 import { useUser } from "@clerk/clerk-react"
-import { NuevaVentaClassicView } from "./NuevaVentaClassicView"
-import { NuevaVentaModernView } from "./NuevaVentaModernView"
 import { LayoutGrid, List, Users, Building2 } from "lucide-react"
 
 const DEFAULT_FORM_CONFIG: IFormConfig = {
@@ -248,15 +246,6 @@ export function NuevaVenta() {
                 </div>
             </div>
 
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    {viewMode === 'classic' ? (
-                        <NuevaVentaClassicView formConfig={formConfig} loading={loading} productosConfig={productosConfig} />
-                    ) : (
-                        <NuevaVentaModernView formConfig={formConfig} loading={loading} productosConfig={productosConfig} />
-                    )}
-                </form>
-            </Form>
         </div >
     )
 }
