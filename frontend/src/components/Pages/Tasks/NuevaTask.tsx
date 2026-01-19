@@ -1,4 +1,3 @@
-import { useEffect } from "react" // <--- Importante para resetear estados si hace falta
 import { useSWRConfig } from "swr"
 import { useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
@@ -10,18 +9,20 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 // Importamos updateTask también
-import { createTask, updateTask } from "@/services/api-back" 
+import { createTask, updateTask } from "@/services/api-back"
 import { TaskForm, TaskFormData } from "./TaskForm"
 import { ITaskUI, TASKS_KEY } from "@/types"
 
 export function NuevaTask({
     open,
     onOpenChange,
-    taskToEdit // <--- NUEVO: Recibimos la tarea o null
+    taskToEdit,
+    initialDate  // Nueva prop para pre-llenar fecha desde el calendario
 }: {
     open: boolean
     onOpenChange: (open: boolean) => void
     taskToEdit?: ITaskUI | null
+    initialDate?: string  // ISO date string
 }) {
     const { user } = useUser()
     const { mutate } = useSWRConfig()
@@ -38,6 +39,7 @@ export function NuevaTask({
             const updatedTask = {
                 ...taskToEdit, // Mantenemos ID, fecha creación, etc.
                 ...values,     // Sobrescribimos con lo nuevo del form
+                fechaProgramada: values.fechaProgramada || taskToEdit.fechaProgramada,
                 // Opcional: Actualizar auditoría al que editó último
                 auditoria: user?.fullName || user?.username || "Usuario Manual",
             }
@@ -68,6 +70,7 @@ export function NuevaTask({
                 ...values,
                 cliente: values.cliente || "",
                 link: values.link || "",
+                fechaProgramada: values.fechaProgramada || "",
                 id: crypto.randomUUID(),
                 estado: "Pendiente",
                 is_deleted: false,
@@ -93,6 +96,32 @@ export function NuevaTask({
         }
     }
 
+    // Determinar valores iniciales para el formulario
+    const getInitialValues = (): TaskFormData | undefined => {
+        if (isEditMode && taskToEdit) {
+            return {
+                tipo: taskToEdit.tipo,
+                descripcion: taskToEdit.descripcion,
+                cliente: taskToEdit.cliente,
+                link: taskToEdit.link,
+                fechaProgramada: taskToEdit.fechaProgramada || ""
+            }
+        }
+
+        // Si hay una fecha inicial (click en día del calendario), la usamos
+        if (initialDate) {
+            return {
+                tipo: "EntregaProducto",
+                cliente: "",
+                descripcion: "",
+                link: "",
+                fechaProgramada: initialDate
+            }
+        }
+
+        return undefined
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
@@ -100,23 +129,19 @@ export function NuevaTask({
                     {/* Título dinámico */}
                     <DialogTitle>{isEditMode ? "Editar Tarea" : "Nueva Tarea"}</DialogTitle>
                     <DialogDescription>
-                        {isEditMode 
-                            ? "Modifica los detalles de la tarea existente." 
+                        {isEditMode
+                            ? "Modifica los detalles de la tarea existente."
                             : "Crea una tarea compartida para el equipo."}
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Pasamos key para forzar re-render si cambia taskToEdit */}
+                {/* Pasamos key para forzar re-render si cambia taskToEdit o initialDate */}
                 <TaskForm
-                    key={taskToEdit ? taskToEdit.id : 'new'} 
+                    key={taskToEdit ? taskToEdit.id : initialDate || 'new'}
                     onSubmit={onSubmit}
                     onCancel={() => onOpenChange(false)}
-                    initialValues={isEditMode ? {
-                        tipo: taskToEdit!.tipo,
-                        descripcion: taskToEdit!.descripcion,
-                        cliente: taskToEdit!.cliente,
-                        link: taskToEdit!.link
-                    } : undefined}
+                    initialValues={getInitialValues()}
+                    isEditMode={isEditMode}
                 />
             </DialogContent>
         </Dialog>

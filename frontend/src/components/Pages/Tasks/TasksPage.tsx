@@ -2,23 +2,23 @@ import React, { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 // Asegúrate de importar tus funciones desde tu archivo
 import { createTask, deleteTask, updateTask, getTasks } from '@/services/api-back';
-import { TrashIcon } from 'lucide-react';
 import { ITask } from '@/types';
 import { TASKS_KEY } from '@/types';
-import { Plus } from "lucide-react"
+import { Plus, List, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NuevaTask } from "./NuevaTask"
 import { TaskList } from "./TaskList"
+import { TasksCalendar } from "./TasksCalendar"
 import { ITaskUI } from '@/types';
 import { motion, Variants } from "framer-motion";
-// Key para el caché de SWR (puede ser cualquier string único)
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.1, // Efecto cascada entre elementos
+            staggerChildren: 0.1,
             delayChildren: 0.1
         }
     }
@@ -35,9 +35,10 @@ const itemVariants: Variants = {
 
 export function TasksPage() {
     const { mutate } = useSWRConfig();
-    // Removed unused state openNuevaTask
     const [modalOpen, setModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<ITaskUI | null>(null);
+    const [initialDate, setInitialDate] = useState<string | undefined>(undefined);
+    const [activeTab, setActiveTab] = useState("lista");
 
     // Fetcher tipado: SWR devolverá un array de ITaskUI
     const { data: tasks, isLoading } = useSWR<ITaskUI[]>(TASKS_KEY, () => getTasks(), {
@@ -55,12 +56,21 @@ export function TasksPage() {
     });
 
     const handleEditClick = (task: ITaskUI) => {
-        setTaskToEdit(task); // Guardamos la tarea a editar
-        setModalOpen(true);  // Abrimos el modal
+        setTaskToEdit(task);
+        setInitialDate(undefined); // Limpiar fecha inicial al editar
+        setModalOpen(true);
     };
 
     const handleNewClick = () => {
-        setTaskToEdit(null); // Limpiamos para crear nueva
+        setTaskToEdit(null);
+        setInitialDate(undefined);
+        setModalOpen(true);
+    };
+
+    // Handler para crear tarea desde el calendario con fecha preseleccionada
+    const handleNewFromCalendar = (date: Date) => {
+        setTaskToEdit(null);
+        setInitialDate(date.toISOString());
         setModalOpen(true);
     };
 
@@ -138,6 +148,15 @@ export function TasksPage() {
         }
     };
 
+    // Handler para cerrar modal y limpiar estado
+    const handleModalClose = (open: boolean) => {
+        setModalOpen(open);
+        if (!open) {
+            setTaskToEdit(null);
+            setInitialDate(undefined);
+        }
+    };
+
     // --- RENDER ---
     return (
         <motion.div className="p-6 max-w-5xl mx-auto"
@@ -167,24 +186,47 @@ export function TasksPage() {
             </motion.header>
 
             {/* COMPONENTE DEL MODAL */}
-            <motion.div
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                <NuevaTask
-                    open={modalOpen}
-                    onOpenChange={setModalOpen}
-                    taskToEdit={taskToEdit}
-                />
-            </motion.div>
+            <NuevaTask
+                open={modalOpen}
+                onOpenChange={handleModalClose}
+                taskToEdit={taskToEdit}
+                initialDate={initialDate}
+            />
 
+            {/* TABS: Vista Lista / Vista Calendario */}
             <motion.div
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
             >
-                <TaskList tasks={tasks || []} onToggleStatus={handleToggleStatus} onDelete={handleDelete} onEdit={handleEditClick} />
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="lista" className="flex items-center gap-2">
+                            <List className="h-4 w-4" />
+                            Vista Lista
+                        </TabsTrigger>
+                        <TabsTrigger value="calendario" className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4" />
+                            Vista Calendario
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="lista">
+                        <TaskList
+                            tasks={tasks || []}
+                            onToggleStatus={handleToggleStatus}
+                            onDelete={handleDelete}
+                            onEdit={handleEditClick}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="calendario">
+                        <TasksCalendar
+                            onNewTask={handleNewFromCalendar}
+                            onEditTask={handleEditClick}
+                        />
+                    </TabsContent>
+                </Tabs>
             </motion.div>
 
         </motion.div>

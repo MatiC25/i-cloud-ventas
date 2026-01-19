@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/Layout/SideBar";
 import { ThemeProvider } from "@/components/ThemeProvider/ThemeProvider";
 import { ModeToggle } from "@/components/ThemeProvider/ModeToggle";
 import { Dashboard } from "@/components/Pages/Dashboard/Dashboard";
+import { DashboardV2 } from "@/components/Pages/Dashboard/DashboardV2";
 import { Estadisticas } from "@/components/Pages/Estadisticas/Estadisticas";
 import { UltimasVentas } from "@/components/Pages/Ventas/UltimasVentas";
 import { HistorialVentas } from "@/components/Pages/Ventas/HistorialVentas";
@@ -97,6 +98,7 @@ const AppLayout: React.FC = () => {
                 {/* Área de contenido */}
                 <div className="p-8">
                     {activeTab === "dashboard" && <Dashboard />}
+                    {activeTab === "dashboard-v2" && <DashboardV2 />}
                     {activeTab === "nueva-venta-minimalista" && <NuevaVentaMinimalista />}
                     {activeTab === "tasks" && <TasksPage />}
                     {activeTab === "estadisticas" && <Estadisticas />}

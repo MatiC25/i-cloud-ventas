@@ -52,6 +52,11 @@ export const SideBarData: SideBarDataType = {
           icon: IconDashboard,
         },
         {
+          title: "Dashboard V2",
+          url: "dashboard-v2",
+          icon: IconDashboard,
+        },
+        {
           title: "Nueva Venta",
           url: "nueva-venta-minimalista",
           icon: IconShoppingCartDollar,

@@ -339,6 +339,7 @@ export interface ITask {
     estado: string;
     is_deleted: boolean;
     created_at: string;
+    fechaProgramada?: string;
     auditoria: string;
 }
 

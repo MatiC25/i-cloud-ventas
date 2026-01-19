@@ -64,42 +64,72 @@ class VentaService {
         repo.save(datosExcel);
       });
 
-      // 6. --- NUEVO: AUDITORÍA Y LIBRO DIARIO ---
-      // Registramos automáticamente cada pago como un ingreso en el Libro Diario
-      const pagos = payloadRaw.pagos || [];
-
+      // 6. --- AUDITORÍA Y LIBRO DIARIO ---
+      // Preparar hoja y variables
       let sheetLibro = ss.getSheetByName("Libro Diario");
-
       if (!sheetLibro) {
         sheetLibro = ss.insertSheet("Libro Diario");
         sheetLibro.appendRow(GastosMapper.getHeadersPrincipal());
       }
-
+      const headersLibro = GastosMapper.getHeadersPrincipal();
       const usuarioLogueado = payloadRaw.usuario || "Sistema";
 
+      // Primero, calculamos el valor total de dispositivos en parte de pago
+      const productosParteDePago = listaProductos.filter(p => p.esParteDePago === true);
+      const valorTotalParteDePago = productosParteDePago.reduce((sum, p) => {
+        // Usamos el precio del producto como valor del canje
+        return sum + (Number(p.precio) || 0);
+      }, 0);
+
+      // Registrar cada dispositivo en parte de pago como "Compra Stock" en el Libro Diario
+      productosParteDePago.forEach(producto => {
+        const descripcionProducto = [producto.tipo, producto.modelo, producto.capacidad, producto.color]
+          .filter(Boolean)
+          .join(' ');
+
+        const operacionCanje = {
+          fecha: new Date(),
+          detalle: `Canje (Venta ID: ${masterId}): ${descripcionProducto}`,
+          tipoMovimiento: "Compra Stock",
+          categoriaMovimiento: "Parte de Pago",
+          monto: Number(producto.precio) || 0,
+          divisa: "USD", // Asumimos USD para canjes, o podría venir del producto
+          destino: "Stock Valorizado",
+          comentarios: `Estado: ${producto.estado || 'N/A'} - IMEI: ${producto.imei || 'N/A'}`,
+          auditoria: usuarioLogueado,
+          id: masterId
+        };
+
+        const rowDataCanje = GastosMapper.toExcel(operacionCanje);
+        const rowArrayCanje = headersLibro.map(h => rowDataCanje[h]);
+        sheetLibro.appendRow(rowArrayCanje);
+      });
+
+      // Ahora registramos los pagos en efectivo/transferencia
+      const pagos = payloadRaw.pagos || [];
+
+      // Calculamos el monto efectivo a registrar (total pagos - valor canje ya está incluido en el precio)
+      // El monto de los pagos debería ser: Precio Total Venta - Valor Canje
+      // Los pagos representan el dinero real que entra, no incluyen el canje
       pagos.forEach(pago => {
-        // Objeto DTO para GastosMapper
+        // Solo registramos si hay monto real
+        if (Number(pago.monto) <= 0) return;
+
         const operacionDto = {
-          fecha: new Date(), // Fecha real de carga
+          fecha: new Date(),
           detalle: `Venta ID: ${masterId}`,
           tipoMovimiento: "Ingreso",
           categoriaMovimiento: "Venta",
           monto: pago.monto,
           divisa: pago.divisa,
-          destino: pago.destino || "A confirmar", // Por defecto a Caja, o podría venir del pago
-          comentarios: `Tipo Pago: ${pago.tipo || ''} - Cambio: ${pago.tipoCambio || 1}`,
+          destino: pago.destino || "A confirmar",
+          comentarios: `Tipo Pago: ${pago.tipo || ''} - Cambio: ${pago.tipoCambio || 1}${valorTotalParteDePago > 0 ? ` (Incluye canje: $${valorTotalParteDePago})` : ''}`,
           auditoria: usuarioLogueado,
           id: masterId
         };
 
         const rowData = GastosMapper.toExcel(operacionDto);
-
-        // Mapeamos a array según headers (orden estricto)
-        // GastosMapper.toExcel devuelve Objeto { "Header": Valor }.
-        // Necesitamos ordenarlo según GastosMapper.getHeadersPrincipal()
-        const headersLibro = GastosMapper.getHeadersPrincipal();
         const rowArray = headersLibro.map(h => rowData[h]);
-
         sheetLibro.appendRow(rowArray);
       });
 

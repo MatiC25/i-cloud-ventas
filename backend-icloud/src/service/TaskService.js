@@ -18,6 +18,7 @@ class TaskService {
             estado: "Pendiente",
             is_deleted: false,
             created_at: fecha,
+            fechaProgramada: payload.fechaProgramada || "",
             auditoria: payload.auditoria
         };
 
