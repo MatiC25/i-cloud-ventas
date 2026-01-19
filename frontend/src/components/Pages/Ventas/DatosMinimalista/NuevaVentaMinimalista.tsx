@@ -109,7 +109,7 @@ function NuevaVentaForm({ config }: { config: any }) {
     const [saleType, setSaleType] = useState<'Minorista' | 'Mayorista'>('Minorista')
 
     // Desestructuramos la config segura
-    const { formConfig, productosConfig } = config;
+    const { formConfig, productosConfig, gastosConfig } = config;
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -204,7 +204,7 @@ function NuevaVentaForm({ config }: { config: any }) {
                             <motion.div className="p-8 space-y-10">
                                 <DatosPartePagoMinimalista />
                                 <Separator className="border-dashed" />
-                                <DatosTransaccionMinimalista formConfig={formConfig} />
+                                <DatosTransaccionMinimalista formConfig={formConfig} gastosConfig={gastosConfig}/>
                             </motion.div>
                         </motion.div>
 

@@ -14,21 +14,22 @@ import { Plus, Trash2, CreditCard, Truck, Receipt } from "lucide-react";
 import { IFormConfig } from "@/types";
 import { MinimalInput, SectionHeader } from "./components";
 import { cn } from "@/lib/utils";
+import { IGastosConfig } from "@/types";
 
 interface IDatosTransaccionProps {
     formConfig: IFormConfig;
+    gastosConfig: IGastosConfig;
 }
 
-export function DatosTransaccionMinimalista({ formConfig }: IDatosTransaccionProps) {
+export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatosTransaccionProps) {
     const { control, watch } = useFormContext();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "pagos",
     });
 
-    const metodosPagoOptions = formConfig?.metodosPago || [];
-    const divisasOptions = formConfig?.divisas || ["USD", "ARS", "USDT"];
-    const destinosOptions = formConfig?.destinos || ["Caja Principal", "Banco"];
+    const divisasOptions = gastosConfig.divisas || ["USD", "ARS", "USDT"];
+    const destinosOptions = gastosConfig.destinos || ["Efectivo"];
 
     // Ensure at least one payment method exists
     if (fields.length === 0) {

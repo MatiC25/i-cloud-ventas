@@ -67,7 +67,7 @@ const AppLayout: React.FC = () => {
 
     return (
         <SidebarProvider>
-            <AppSidebar onTabChange={setActiveTab} activeTab={activeTab} />
+            <AppSidebar onTabChange={setActiveTab} activeTab={activeTab} data={filteredSideBarData} />
 
             <main className="w-full bg-background min-h-screen transition-colors duration-300">
 

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { NavSecondary } from "@/components/Layout/NavSecondary"
-import { SideBarData } from "@/components/Layout/SideBarData"
+import { SideBarData, SideBarDataType } from "@/components/Layout/SideBarData"
 import { IconBrandApple } from "@tabler/icons-react"
 import {
   Sidebar,
@@ -24,12 +24,14 @@ import { dark } from "@clerk/themes"
 type SideBarAgregados = {
   onTabChange: (tab: string) => void;
   activeTab: string;
+  data: SideBarDataType;
 }
 
 
 export function AppSidebar({
   onTabChange,
   activeTab,
+  data,
   ...props }: React.ComponentProps<typeof Sidebar> & SideBarAgregados) {
 
   const { user } = useUser();
@@ -53,28 +55,32 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {SideBarData.navGroups.map((group) => (
+        {data.navGroups.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      onClick={() => onTabChange(item.url)}
-                      isActive={activeTab === item.url}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
+            {group.items.length > 0 && (
+              <>
+                <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          onClick={() => onTabChange(item.url)}
+                          isActive={activeTab === item.url}
+                        >
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </>
+            )}
           </SidebarGroup>
         ))}
-        <NavSecondary items={SideBarData.navSecondary} className="mt-auto" />
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

@@ -139,18 +139,6 @@ export const adaptarVentaParaTabla = (row: any): IVentaTabla => {
 };
 
 // -- CONFIGURACIÓN DE FORMULARIO -- 
-export interface IFormConfig {
-    metodosPago: string[];
-    divisas: string[];
-    tiposDeOperaciones: string[];
-    tiposDeProductos: string[];
-    modelosDeProductos: string[];
-    capacidadesDeProductos: string[];
-    coloresDeProductos: string[];
-    canalesDeVenta: string[];
-    estadosDeProductos: string[];
-    destinos?: string[];
-}
 
 export interface ISaveVentaResponse {
     status: string;
@@ -376,3 +364,37 @@ export interface IFacebookConfig {
     fb_token: string;
 }
 
+// ==================== //
+// == CONFIGURACIÓN == //
+// ==================== //
+
+export interface IConfigResponse {
+    status: string;
+    message: string;
+    data: IConfig
+}
+
+export interface IConfig {
+    formConfig: IFormConfig;
+    productosConfig: IProductosConfig[];
+    gastosConfig: IGastosConfig;
+}
+
+export interface IFormConfig {
+    canalesDeVenta: string[];
+    estado: string[];
+}
+
+export interface IProductosConfig {
+    categoria: string;
+    modelo: string;
+    variantes: string;
+    colores: string;
+}
+
+export interface IGastosConfig {
+    destinos: string[];
+    divisas: string[];
+    tiposDeMovimiento: string[];
+    categoriaDeMovimiento: string[];
+}

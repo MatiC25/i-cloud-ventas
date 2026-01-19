@@ -1,4 +1,4 @@
-const CACHE_DURATION = 180;
+const CACHE_DURATION_AGREGADOR = 180;
 const AGREGADOR_CACHE_KEY = 'AGREGADOR_DATA';
 
 class AgregadorService {
@@ -30,7 +30,7 @@ class AgregadorService {
             "Gasto": [...gasto]
         }
 
-        CacheUtil.put(CACHE_KEY, result, CACHE_DURATION);
+        CacheUtil.put(CACHE_KEY, result, CACHE_DURATION_AGREGADOR);
         return result;
     }
 

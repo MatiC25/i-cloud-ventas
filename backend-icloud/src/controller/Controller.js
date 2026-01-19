@@ -174,6 +174,10 @@ function doPost(e) {
         result = ConfigService.serviceGetOptions();
         break;
 
+      case "getFullConfig":
+        result = ConfigService.getFullConfig();
+        break;
+
       case "save_config":
         result = ConfigService.serviceSaveConfig(payload);
         break;

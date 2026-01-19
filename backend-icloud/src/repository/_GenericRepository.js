@@ -94,6 +94,32 @@ class _GenericRepository {
   }
 
 
+
+    findAllNotReversed() {
+    const ss = getDB();
+    const sheet = ss.getSheetByName(this.sheetName);
+    if (!sheet) return [];
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return []; // Solo headers o vacía
+
+    // Leer Headers
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Leer Datos
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    // Mapear
+    return data.map(row => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h.toString().trim()] = row[i];
+      });
+      return obj;
+    });
+  }
+
+
   findAllWith(limit = 100) {
     const ss = getDB();
     const sheet = ss.getSheetByName(this.sheetName);

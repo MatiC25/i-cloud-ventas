@@ -18,7 +18,9 @@ import {
     DASHBOARD_KEY,
     ITask,
     IFacebookConfig,
-    IRecentOperations
+    IRecentOperations,
+    IConfig,
+    IConfigResponse
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
@@ -152,6 +154,12 @@ export const getRecentOperations = async (limit = 50) => {
 
 export const checkSpreadsheetIntegrity = (sheetId: string) =>
     apiRequest({ action: 'check_integrity', sheetId });
+
+
+export const getFullConfig = async () => {
+
+    return apiRequest<IConfig>({ action: 'getFullConfig' });
+}
 
 
 // ==================== //

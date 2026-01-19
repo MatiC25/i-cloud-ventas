@@ -89,7 +89,7 @@ class ConfigService {
      * @param {Object} payload - { fb_token, ad_account_id, sheet_id, admin_key }
      */
     static saveFacebookSettings(payload) {
-    const props = PropertiesService.getScriptProperties();
+        const props = PropertiesService.getScriptProperties();
         if (payload.fb_token) {
             props.setProperty('FB_ACCESS_TOKEN', payload.fb_token);
         }
@@ -106,6 +106,28 @@ class ConfigService {
             message: "Configuración de Facebook actualizada correctamente.",
             updated_fields: Object.keys(payload).filter(k => k !== 'admin_key')
         };
+    }
+
+    static getFullConfig() {
+        const repoProductos = new _GenericRepository("Config_Productos");
+        const repoGastos = new _GenericRepository("Config_Gastos");
+        const repoForm = new _GenericRepository("Config_Form");
+
+        try {
+            const productos = repoProductos.findAllNotReversed();
+            const gastos = repoGastos.findAllNotReversed();
+            const form = repoForm.findAllNotReversed();
+
+            return {
+                productosConfig: productos,
+                gastosConfig: gastos,
+                formConfig: form
+            };
+
+        } catch (error) {
+            console.error("Error al obtener la configuración completa:", error);
+            throw error; // Let Controller handle the error response
+        }
     }
 
 }

@@ -23,7 +23,7 @@ interface NavItem {
   requiresAdmin?: boolean; // <--- El signo '?' lo hace opcional
 }
 
-interface SideBarDataType {
+export interface SideBarDataType {
   user: {
     name: string;
     email: string;

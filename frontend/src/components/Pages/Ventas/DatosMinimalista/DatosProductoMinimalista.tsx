@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, ShoppingBag, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { IFormConfig, IConfigProducto } from "@/types"
+import { IFormConfig, IProductosConfig } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -19,7 +19,7 @@ import { MinimalInput, MinimalSelectTrigger, SectionHeader } from "./components"
 
 interface IDatosProductoProps {
     formConfig: IFormConfig
-    productosConfig?: IConfigProducto[]
+    productosConfig: IProductosConfig[]
 }
 
 const getCategoryIcon = (category: string) => {
@@ -27,7 +27,7 @@ const getCategoryIcon = (category: string) => {
     return ShoppingBag;
 }
 
-export function DatosProductoMinimalista({ formConfig, productosConfig = [] }: IDatosProductoProps) {
+export function DatosProductoMinimalista({ formConfig, productosConfig }: IDatosProductoProps) {
     const { control, watch, setValue } = useFormContext()
     const { fields, append, remove } = useFieldArray({
         control,
@@ -145,7 +145,7 @@ export function DatosProductoMinimalista({ formConfig, productosConfig = [] }: I
 interface ProductFormProps {
     index: number
     formConfig: IFormConfig
-    productosConfig: IConfigProducto[]
+    productosConfig: IProductosConfig[]
     mode: 'manual' | 'auto'
     control: any
     watch: any
@@ -157,68 +157,101 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
     const modelo = watch(`productos.${index}.modelo`)
     const esParteDePago = watch(`productos.${index}.esParteDePago`)
 
+    const tipoSeleccionado = watch(`productos.${index}.tipo`);
+    const modeloSeleccionado = watch(`productos.${index}.modelo`);
+
     // --- LOGICA DE OBTENCIÓN DE DATOS (Idem Original) ---
-    const useBackendConfig = productosConfig.length > 0;
+    //const useBackendConfig = productosConfig.length > 0;
 
-    const categoriasOptions = useBackendConfig
-        ? Array.from(new Set(productosConfig.map(p => p.Categoria))).filter(Boolean)
-        : formConfig.tiposDeProductos || [];
+    const useBackendConfig = Array.isArray(productosConfig) && productosConfig.length > 0;
 
-    const modelosOptions = useBackendConfig
-        ? Array.from(new Set(
-            productosConfig
-                .filter(p => !tipo || p.Categoria === tipo)
-                .map(p => p.Modelo)
-        )).filter(Boolean)
-        : formConfig.modelosDeProductos || [];
+    const categoriasOptions = Array.from(new Set(productosConfig.map(p => p.categoria))).filter(Boolean)
 
-    const capacidadesOptions = useBackendConfig
-        ? Array.from(new Set(
-            productosConfig
-                .filter(p => (!tipo || p.Categoria === tipo) && (!modelo || p.Modelo === modelo))
-                .flatMap(p => p.Variantes ? p.Variantes.split(',').map(s => s.trim()) : [])
-        )).filter(Boolean)
-        : formConfig.capacidadesDeProductos || [];
 
-    const coloresOptions = useBackendConfig
-        ? Array.from(new Set(
-            productosConfig
-                .filter(p => (!tipo || p.Categoria === tipo) && (!modelo || p.Modelo === modelo))
-                .flatMap(p => p.Colores ? p.Colores.split(',').map(s => s.trim()) : [])
-        )).filter(Boolean)
-        : formConfig.coloresDeProductos || [];
+    const modelosOptions = Array.from(new Set(
+        productosConfig
+            .filter(p => !tipoSeleccionado || p.categoria === tipoSeleccionado)
+            .map(p => p.modelo)
+    )).filter(Boolean)
 
-    const estados = formConfig.estadosDeProductos || ["Nuevo", "Usado", "Reacondicionado"];
+    const capacidadesOptions = Array.from(new Set(
+        productosConfig
+            // Filtramos por AMBOS campos
+            .filter(p =>
+                (!tipoSeleccionado || p.categoria === tipoSeleccionado) &&
+                (!modeloSeleccionado || p.modelo === modeloSeleccionado)
+            )
+            // Rompemos el string "256GB, 512GB" y aplanamos el array
+            .flatMap(p => p.variantes ? p.variantes.split(',').map(s => s.trim()) : [])
+    )).filter(Boolean)
+
+    const coloresOptions = Array.from(new Set(
+        productosConfig
+            .filter(p =>
+                (!tipoSeleccionado || p.categoria === tipoSeleccionado) &&
+                (!modeloSeleccionado || p.modelo === modeloSeleccionado)
+            )
+            .flatMap(p => p.colores ? p.colores.split(',').map(s => s.trim()) : [])
+    )).filter(Boolean)
+
+    const estados = formConfig.estado || [];
+    const canalesDeVenta = formConfig.canalesDeVenta || [];
+
+    useEffect(() => {
+        setValue(`productos.${index}.modelo`, "");
+        setValue(`productos.${index}.capacidad`, "");
+    }, [tipoSeleccionado, setValue, index]);
 
     // --- MODO AUTO: Generar Lista Plana (Idem Original) ---
     const getAutoOptions = () => {
-        if (!useBackendConfig) return [];
+        // Validación de seguridad
+        if (!useBackendConfig || !Array.isArray(productosConfig)) return [];
+
         const options: { label: string, value: string, icon: any, data: any }[] = [];
+
         productosConfig.forEach(p => {
-            const caps = p.Variantes ? p.Variantes.split(',').map(s => s.trim()).filter(Boolean) : [''];
-            const cols = p.Colores ? p.Colores.split(',').map(s => s.trim()).filter(Boolean) : [''];
-            const Icon = ShoppingBag;
+            // 1. CAMBIO CLAVE: Usamos las props en minúscula (normalizadas en el hook)
+            // Separamos por coma y limpiamos espacios
+            const caps = p.variantes ? p.variantes.split(',').map(s => s.trim()).filter(Boolean) : [''];
+            const cols = p.colores ? p.colores.split(',').map(s => s.trim()).filter(Boolean) : [''];
+
+            const Icon = ShoppingBag; // Asegúrate de tener este import
+
+            // Arrays iterables (si está vacío, al menos una iteración para que el producto exista)
             const iterCaps = caps.length > 0 ? caps : [''];
             const iterCols = cols.length > 0 ? cols : [''];
+
+            // 2. Doble bucle para generar todas las combinaciones (Producto Cartesiano)
             iterCaps.forEach(cap => {
                 iterCols.forEach(col => {
-                    const parts = [p.Categoria, p.Modelo, cap, col].filter(Boolean);
+                    // Construimos la etiqueta visual: "iPhone | 13 Pro | 256GB | Blue"
+                    const parts = [p.categoria, p.modelo, cap, col].filter(Boolean);
                     const label = parts.join(" | ");
+
+                    // El valor es un JSON string para poder recuperarlo fácil al seleccionar
                     const value = JSON.stringify({
-                        tipo: p.Categoria,
-                        modelo: p.Modelo,
-                        capacidad: cap,
-                        color: col
+                        tipo: p.categoria,
+                        modelo: p.modelo,
+                        capacidad: cap, // Si era '' se guarda como ''
+                        color: col      // Si era '' se guarda como ''
                     });
+
                     options.push({
                         label,
                         value,
                         icon: Icon,
-                        data: { tipo: p.Categoria, modelo: p.Modelo, capacidad: cap, color: col }
+                        // Guardamos la data cruda por si la necesitas en el evento de selección
+                        data: {
+                            tipo: p.categoria,
+                            modelo: p.modelo,
+                            capacidad: cap,
+                            color: col
+                        }
                     });
                 });
             });
         });
+
         return options;
     };
 
