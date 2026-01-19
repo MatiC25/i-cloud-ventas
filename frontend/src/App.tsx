@@ -98,7 +98,7 @@ const AppLayout: React.FC = () => {
                 {/* Área de contenido */}
                 <div className="p-8">
                     {activeTab === "dashboard" && <Dashboard />}
-                    {activeTab === "dashboard-v2" && <DashboardV2 />}
+                    {/* {activeTab === "dashboard-v2" && <DashboardV2 />} */}
                     {activeTab === "nueva-venta-minimalista" && <NuevaVentaMinimalista />}
                     {activeTab === "tasks" && <TasksPage />}
                     {activeTab === "estadisticas" && <Estadisticas />}
