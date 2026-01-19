@@ -48,6 +48,21 @@ function processConfig(rawData: IConfig): SystemConfig {
         )),
       }
 
+    const gatosRow = Array.isArray(gastosConfig) ? gastosConfig : [];
+    const processedGastosConfig: IGastosConfig = {
+      destinos: Array.from(new Set(
+        gatosRow.map(r => r["Destinos"]).filter((v) => v && v !== "")
+      )),
+      divisas: Array.from(new Set(
+        gatosRow.map(r => r["Divisas"]).filter((v) => v && v !== "")
+      )),
+      tiposDeMovimiento: Array.from(new Set(
+        gatosRow.map(r => r["Tipo de Movimiento"]).filter((v) => v && v !== "")
+      )),
+      categoriaDeMovimiento: Array.from(new Set(
+        gatosRow.map(r => r["Categoria de Movimiento"]).filter((v) => v && v !== "")
+      )),
+    }
 
   return {
     formConfig: processedFormConfig,
@@ -59,7 +74,7 @@ function processConfig(rawData: IConfig): SystemConfig {
         colores: p["Colores"] || ""
       }))
       : [],
-    gastosConfig
+    gastosConfig: processedGastosConfig
   };
 }
 
@@ -74,16 +89,12 @@ export function useSystemConfig() {
     try {
       const cached = localStorage.getItem(CONFIG_KEY);
       if (cached) {
-        console.log("💾 [2] Encontré caché, procesando...");
         setConfig(processConfig(JSON.parse(cached)));
-      } else {
-        console.log("🤷‍♂️ [2] No hay caché local.");
       }
     } catch (e) {
       console.warn("⚠️ Error leyendo caché, limpiando...");
       localStorage.removeItem(CONFIG_KEY);
     } finally {
-      console.log("✅ [2.5] Hidratación terminada. Hydrated = true");
       setHydrated(true);
     }
   }, []);
@@ -95,22 +106,18 @@ export function useSystemConfig() {
     {
       revalidateOnFocus: false,
       shouldRetryOnError: false,
-      onSuccess: (data) => console.log("🎉 [6] SWR Éxito", data),
-      onError: (err) => console.log("💀 [6] SWR Error", err),
+      onSuccess: (data) => console.log(" [6] SWR Éxito", data),
+      onError: (err) => console.log(" [6] SWR Error", err),
     }
   );
 
   // 3. ACTUALIZACIÓN DE ESTADO
   useEffect(() => {
     if (!data) return;
-    console.log("🔄 [7] Actualizando estado con nuevos datos...");
     const processed = processConfig(data);
     setConfig(processed);
     localStorage.setItem(CONFIG_KEY, JSON.stringify(data));
   }, [data]);
-
-  // LOG DE DEBUG DEL ESTADO ACTUAL
-  console.log(`📊 [Estado UI] Config: ${!!config}, Error: ${!!error}, Loading calculado: ${!config && !error}`);
 
   const forceReload = useCallback(async () => {
      // ... (tu lógica de reload)

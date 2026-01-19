@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
+
 import { Combobox } from "@/components/ui/combobox"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
-import { getGastosConfig } from "@/services/api-back"
+
 import { IOperacion } from "@/types"
+import { useSystemConfig } from "@/hooks/useSystemConfig"
+
 
 const formSchema = z.object({
     tipo: z.string().min(1, "Selecciona un tipo"),
@@ -46,6 +47,9 @@ export function OperacionForm({ initialData, onSubmit, onCancel, submitLabel = "
         destinos: [] as string[]
     })
 
+    const { config } = useSystemConfig();
+    const gastosConfig = config?.gastosConfig;
+
     const form = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -60,24 +64,15 @@ export function OperacionForm({ initialData, onSubmit, onCancel, submitLabel = "
     })
 
     useEffect(() => {
-        const fetchOptions = async () => {
-            try {
-                const data = await getGastosConfig();
-                if (Array.isArray(data)) {
-                    const tipos = Array.from(new Set(data.map(r => r["Tipos de Movimiento"]).filter(Boolean)));
-                    const categorias = Array.from(new Set(data.map(r => r["Categoría de Movimiento"]).filter(Boolean)));
-                    const divisas = Array.from(new Set(data.map(r => r["Divisas"]).filter(Boolean)));
-                    const destinos = Array.from(new Set(data.map(r => r["Destinos"]).filter(Boolean)));
+        if (!gastosConfig) return; // Wait until config is loaded
 
-                    setOptions({ tipos, categorias, divisas, destinos });
-                }
-            } catch (error) {
-                console.error("Error cargando configuración de gastos:", error);
-                toast.error("Error al cargar opciones");
-            }
-        }
-        fetchOptions()
-    }, [])
+        setOptions({
+            tipos: gastosConfig.tiposDeMovimiento,
+            categorias: gastosConfig.categoriaDeMovimiento,
+            divisas: gastosConfig.divisas,
+            destinos: gastosConfig.destinos
+        });
+    }, [gastosConfig])
 
     // Reset logic when initialData changes (important for reusing the same form instance in a dialog)
     useEffect(() => {

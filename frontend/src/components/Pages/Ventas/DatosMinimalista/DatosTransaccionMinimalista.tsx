@@ -33,7 +33,7 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
 
     // Ensure at least one payment method exists
     if (fields.length === 0) {
-        append({ monto: 0, divisa: "USD", tipoCambio: 1550, destino: "Caja Principal" });
+        append({ monto: 0, divisa: "USD", tipoCambio: 1550, destino: "A Confirmar" });
     }
 
     return (

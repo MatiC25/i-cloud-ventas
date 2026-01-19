@@ -399,3 +399,9 @@ export interface IGastosConfig {
     tiposDeMovimiento: string[];
     categoriaDeMovimiento: string[];
 }
+
+export interface SystemConfig {
+  formConfig: IFormConfig;
+  productosConfig: IProductosConfig[];
+  gastosConfig: IGastosConfig;
+}

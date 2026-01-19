@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TasksPage } from './components/Pages/Tasks/TasksPage';
 import { AdminPanel } from './components/Pages/AdminPanel/AdminPanel';
+import { CashOpeningDialog } from './components/Caja/CashOpeningDialog';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
 import { useUser } from "@clerk/clerk-react";
@@ -111,6 +112,7 @@ const AppLayout: React.FC = () => {
 
             </main>
             <Toaster />
+            <CashOpeningDialog />
         </SidebarProvider>
     );
 };

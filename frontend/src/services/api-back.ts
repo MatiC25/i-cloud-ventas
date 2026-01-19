@@ -231,15 +231,22 @@ export const getTasks = async (): Promise<ITask[]> => {
 // ====== FACEBOOK ====== //
 // ====================== //
 
+interface IFacebookTestResponse {
+    name?: string;
+    id?: string;
+    error?: boolean;
+    message?: string;
+}
+
 export const testFacebookName = async (sessionId: string) => {
-    return apiRequest({ action: 'test_name_fb', payload: { sessionId } });
+    return apiRequest<IFacebookTestResponse>({ action: 'test_name_fb', sessionId });
 }
 
 export const checkFacebookData = async (sessionId: string) => {
-    return apiRequest({ action: 'check_facebook_data', payload: { sessionId } });
+    return apiRequest({ action: 'check_facebook_data', sessionId });
 }
 
 export const saveFacebookConfig = async (config: IFacebookConfig, sessionId: string) => {
-    return apiRequest({ action: 'save_facebook_config', payload: config, sessionId: sessionId });
+    return apiRequest({ action: 'save_facebook_config', sessionId, payload: config });
 }
 
