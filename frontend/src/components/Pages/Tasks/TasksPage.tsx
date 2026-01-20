@@ -4,12 +4,13 @@ import useSWR, { useSWRConfig } from 'swr';
 import { createTask, deleteTask, updateTask, getTasks } from '@/services/api-back';
 import { ITask } from '@/types';
 import { TASKS_KEY } from '@/types';
-import { Plus, List, CalendarDays } from "lucide-react"
+import { Plus, List, CalendarDays, Columns } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NuevaTask } from "./NuevaTask"
 import { TaskList } from "./TaskList"
 import { TasksCalendar } from "./TasksCalendar"
+import { TasksListWeekly } from "./TasksListWeekly"
 import { ITaskUI } from '@/types';
 import { motion, Variants } from "framer-motion";
 
@@ -38,7 +39,7 @@ export function TasksPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState<ITaskUI | null>(null);
     const [initialDate, setInitialDate] = useState<string | undefined>(undefined);
-    const [activeTab, setActiveTab] = useState("lista");
+    const [activeTab, setActiveTab] = useState("semanal");
 
     // Fetcher tipado: SWR devolverá un array de ITaskUI
     const { data: tasks, isLoading } = useSWR<ITaskUI[]>(TASKS_KEY, () => getTasks(), {
@@ -205,6 +206,10 @@ export function TasksPage() {
                             <List className="h-4 w-4" />
                             Vista Lista
                         </TabsTrigger>
+                        <TabsTrigger value="semanal" className="flex items-center gap-2">
+                            <Columns className="h-4 w-4" />
+                            Vista Semanal
+                        </TabsTrigger>
                         <TabsTrigger value="calendario" className="flex items-center gap-2">
                             <CalendarDays className="h-4 w-4" />
                             Vista Calendario
@@ -217,6 +222,13 @@ export function TasksPage() {
                             onToggleStatus={handleToggleStatus}
                             onDelete={handleDelete}
                             onEdit={handleEditClick}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="semanal">
+                        <TasksListWeekly
+                            onNewTask={handleNewFromCalendar}
+                            onEditTask={handleEditClick}
                         />
                     </TabsContent>
 
