@@ -14,6 +14,7 @@ import { motion, Variants } from "framer-motion"
 import { guardarVenta } from "@/services/api-back"
 import { useSystemConfig } from '@/hooks/useSystemConfig'
 import { generarPDFVenta } from "@/utils/pdfGenerator"
+import { cn } from "@/lib/utils" // Added cn import
 
 // Componentes del Formulario
 import { DatosClienteMinimalista } from "./DatosClienteMinimalista"
@@ -194,7 +195,38 @@ function NuevaVentaForm({ config }: { config: any }) {
                             variants={itemVariants}
                         >
                             <motion.div className="p-8">
-                                <DatosClienteMinimalista formConfig={formConfig} />
+                                <DatosClienteMinimalista
+                                    formConfig={formConfig}
+                                    headerAction={
+                                        <div className="bg-muted/50 p-1 rounded-lg inline-flex relative border border-border/50">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSaleType('Minorista')}
+                                                className={cn(
+                                                    "px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 relative z-10",
+                                                    saleType === 'Minorista'
+                                                        ? "bg-white dark:bg-slate-800 text-foreground shadow-sm ring-1 ring-border/50"
+                                                        : "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                                )}
+                                            >
+                                                Minorista
+                                            </button>
+                                            <div className="w-px h-4 bg-border/50 my-auto mx-1" />
+                                            <button
+                                                type="button"
+                                                onClick={() => setSaleType('Mayorista')}
+                                                className={cn(
+                                                    "px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 relative z-10",
+                                                    saleType === 'Mayorista'
+                                                        ? "bg-white dark:bg-slate-800 text-foreground shadow-sm ring-1 ring-border/50"
+                                                        : "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                                )}
+                                            >
+                                                Mayorista
+                                            </button>
+                                        </div>
+                                    }
+                                />
                             </motion.div>
                             <Separator />
                             <motion.div className="p-8">
@@ -204,7 +236,7 @@ function NuevaVentaForm({ config }: { config: any }) {
                             <motion.div className="p-8 space-y-10">
                                 <DatosPartePagoMinimalista />
                                 <Separator className="border-dashed" />
-                                <DatosTransaccionMinimalista formConfig={formConfig} gastosConfig={gastosConfig}/>
+                                <DatosTransaccionMinimalista formConfig={formConfig} gastosConfig={gastosConfig} />
                             </motion.div>
                         </motion.div>
 

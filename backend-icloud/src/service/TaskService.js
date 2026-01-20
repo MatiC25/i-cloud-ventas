@@ -30,6 +30,7 @@ class TaskService {
     static updateTask(payload) {
         const ss = getDB();
         const sheet = ss.getSheetByName("Tareas");
+        if (!sheet) return { status: "error", message: "No se encontró la hoja de tareas" };
 
         const data = sheet.getDataRange().getValues();
         const headers = data.shift();
@@ -52,6 +53,7 @@ class TaskService {
     static deleteTask(id) {
         const ss = getDB();
         const sheet = ss.getSheetByName("Tareas");
+        if (!sheet) return { status: "error", message: "No se encontró la hoja de tareas" };
 
         const data = sheet.getDataRange().getValues();
         const headers = data.shift();
@@ -78,6 +80,7 @@ class TaskService {
     static getTasks() {
         const ss = getDB();
         const sheet = ss.getSheetByName("Tareas");
+        if (!sheet) return { status: "error", message: "No se encontró la hoja de tareas" };
 
         const data = sheet.getDataRange().getValues();
         const headers = data.shift();

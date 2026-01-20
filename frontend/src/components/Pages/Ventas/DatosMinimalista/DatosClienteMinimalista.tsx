@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 
 interface IDatosClienteProps {
     formConfig: IFormConfig;
+    headerAction?: React.ReactNode;
 }
 
-export function DatosClienteMinimalista({ formConfig }: IDatosClienteProps) {
+export function DatosClienteMinimalista({ formConfig, headerAction }: IDatosClienteProps) {
     const { control } = useFormContext()
 
     return (
@@ -20,7 +21,9 @@ export function DatosClienteMinimalista({ formConfig }: IDatosClienteProps) {
                 icon={IconUser}
                 title="Datos del Cliente"
                 iconClassName="bg-blue-500/10 text-blue-500 border-blue-500/20"
-            />
+            >
+                {headerAction}
+            </SectionHeader>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 

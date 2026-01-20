@@ -60,22 +60,25 @@ interface SectionHeaderProps {
     iconClassName?: string
 }
 
-export function SectionHeader({ icon: Icon, title, description, className, iconClassName }: SectionHeaderProps) {
+export function SectionHeader({ icon: Icon, title, description, className, iconClassName, children }: SectionHeaderProps & { children?: React.ReactNode }) {
     return (
-        <div className={cn("flex items-start gap-3 mb-6", className)}>
-            <div className={cn("mt-0.5 p-1.5 rounded-md border bg-primary/10 text-primary border-primary/10", iconClassName)}>
-                <Icon size={18} strokeWidth={2.5} />
+        <div className={cn("flex items-center justify-between mb-6", className)}>
+            <div className="flex items-start gap-3">
+                <div className={cn("mt-0.5 p-1.5 rounded-md border bg-primary/10 text-primary border-primary/10", iconClassName)}>
+                    <Icon size={18} strokeWidth={2.5} />
+                </div>
+                <div className="space-y-0.5">
+                    <h3 className="text-base font-semibold tracking-tight text-foreground leading-none">
+                        {title}
+                    </h3>
+                    {description && (
+                        <p className="text-xs text-muted-foreground font-medium">
+                            {description}
+                        </p>
+                    )}
+                </div>
             </div>
-            <div className="space-y-0.5">
-                <h3 className="text-base font-semibold tracking-tight text-foreground leading-none">
-                    {title}
-                </h3>
-                {description && (
-                    <p className="text-xs text-muted-foreground font-medium">
-                        {description}
-                    </p>
-                )}
-            </div>
+            {children}
         </div>
     )
 }

@@ -66,6 +66,61 @@ const itemVariants: Variants = {
     }
 };
 
+function safeDate(value: any): Date | null {
+    if (!value) return null
+
+    // Si viene como Date real (GAS a veces lo manda así)
+    if (value instanceof Date && !isNaN(value.getTime())) {
+        return value
+    }
+
+    // Si viene como string ISO
+    if (typeof value === "string") {
+        const parsed = parseISO(value)
+        if (!isNaN(parsed.getTime())) return parsed
+    }
+
+    return null
+}
+
+export function normalizeCurrency(value?: string): "USD" | "ARS" | "EUR" {
+    if (!value) return "USD"
+
+    const v = value
+        .toLowerCase()
+        .normalize("NFD")              // quita acentos
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+
+    // DÓLARES
+    if (
+        v === "usd" ||
+        v.includes("dolar")
+    ) {
+        return "USD"
+    }
+
+    // PESOS ARGENTINOS
+    if (
+        v === "ars" ||
+        v.includes("peso")
+    ) {
+        return "ARS"
+    }
+
+    // EUROS (por si aparece)
+    if (
+        v === "eur" ||
+        v.includes("euro")
+    ) {
+        return "EUR"
+    }
+
+    // fallback seguro
+    return "USD"
+}
+
+
 export function HistorialCompleto() {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('day');
     const { setActiveTab } = useNavigation();
@@ -127,9 +182,10 @@ export function HistorialCompleto() {
     // --- MAPPERS ---
     const mapVenta = (list: any[]): IVentaTabla[] => {
         if (!list) return [];
+
         return list.map(item => ({
             id: item["N° ID"] || item.id || Math.random().toString(),
-            fecha: new Date(item["Fecha"] || item.fecha),
+            fecha: safeDate(item["Fecha"] ?? item.fecha) || new Date(),
             vendedor: item["Auditoría"] || item.auditoria || "Sistema",
             cliente: item["Nombre y Apellido"] || item.cliente || "Sin Nombre",
             producto: `${item["Equipo | Producto"] || ''} ${item["Modelo"] || ''} ${item["Tamaño"] || ''}`.trim(),
@@ -148,12 +204,12 @@ export function HistorialCompleto() {
         if (!list) return [];
         return list.map(item => ({
             id: item["ID"] || "",
-            fecha: new Date(item["Fecha"] || item.fecha),
+            fecha: safeDate(item["Fecha"] ?? item.fecha) || new Date(),
             detalle: item["Detalle"] || "",
             tipo: item["Tipo de Movimiento"] || "",
             categoria: item["Categoría de Movimiento"] || "",
             monto: Number(item["Monto"] || 0),
-            divisa: item["Divisa"] || "USD",
+            divisa: normalizeCurrency(item["Divisa"]),
             destino: item["Destino"] || "",
             comentarios: item["Comentarios"] || "",
             auditoria: item["Auditoría"] || "Sistema"
@@ -287,7 +343,23 @@ export function HistorialCompleto() {
         {
             accessorKey: "monto",
             header: () => <div className="text-right">Monto</div>,
-            cell: ({ row }) => <div className={`text-right font-bold ${row.original.tipo === 'Ingreso' ? 'text-green-600' : 'text-red-600'}`}>{row.original.monto.toLocaleString("en-US", { style: "currency", currency: row.original.divisa })}</div>
+            cell: ({ row }) => {
+                const currency = normalizeCurrency(row.original.divisa)
+
+                return (
+                    <div
+                        className={`text-right font-bold ${row.original.tipo === "Ingreso"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                    >
+                        {row.original.monto.toLocaleString("en-US", {
+                            style: "currency",
+                            currency,
+                        })}
+                    </div>
+                )
+            }
         },
         {
             id: "actions",
