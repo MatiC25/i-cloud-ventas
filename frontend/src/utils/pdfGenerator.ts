@@ -7,7 +7,7 @@ const firmaBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAO0AAAC9CAYAA
 export const generarPDFVenta = (venta: IVenta, idOperacion: string) => {
   // 1. Inicializar documento
   const doc = new jsPDF('p', 'mm', 'a4');
-  
+
   // Colores corporativos (Gris oscuro para textos, gris claro para fondos)
   const colorTexto = '#333333';
   const colorBorde = '#e0e0e0';
@@ -32,10 +32,10 @@ export const generarPDFVenta = (venta: IVenta, idOperacion: string) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(colorTexto);
-  
+
   const fechaVenta = new Date().toLocaleDateString('es-AR');
   // Usamos el ID corto o el que pases por parámetro
-  const nroFactura = idOperacion.slice(-8).toUpperCase(); 
+  const nroFactura = idOperacion.slice(-8).toUpperCase();
 
   // Dibujar datos de factura alineados a la derecha
   doc.text(`Factura N°: ${nroFactura}`, 195, 35, { align: 'right' });
@@ -46,7 +46,7 @@ export const generarPDFVenta = (venta: IVenta, idOperacion: string) => {
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("INFORMACIÓN DEL CLIENTE", 15, 35);
-  
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   // Validamos que existan los datos para no imprimir "undefined"
@@ -77,18 +77,18 @@ export const generarPDFVenta = (venta: IVenta, idOperacion: string) => {
       fillColor: '#f3f4f6', // Fondo gris claro para cabecera
       textColor: '#111827', // Texto oscuro cabecera
       fontStyle: 'bold',
-      halign: 'left'
+      halign: 'center' // Encabezados centrados
     },
     columnStyles: {
-      0: { cellWidth: 'auto' }, // Descripción ancha
-      1: { halign: 'right' },   // Precio a la derecha
-      2: { halign: 'center' },  // Cantidad centrada
-      3: { halign: 'right', fontStyle: 'bold' } // Total a la derecha y negrita
+      0: { cellWidth: 'auto', halign: 'center' }, // Descripción centrada
+      1: { halign: 'center' },   // Precio centrado
+      2: { halign: 'center' },   // Cantidad centrada
+      3: { halign: 'center', fontStyle: 'bold' } // Total centrado y negrita
     },
     // Dibujar líneas solo abajo de cada fila (estilo clean)
     didDrawCell: (data) => {
       if (data.section === 'body' && data.column.index === 0) {
-         // Opcional: Personalización extra si quisieras bordes
+        // Opcional: Personalización extra si quisieras bordes
       }
     }
   });
@@ -100,23 +100,23 @@ export const generarPDFVenta = (venta: IVenta, idOperacion: string) => {
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   const totalFormateado = venta.productos.reduce((total, prod) => total + (prod.precio * prod.cantidad), 0) ? `$${Number(venta.productos.reduce((total, prod) => total + (prod.precio * prod.cantidad), 0)).toLocaleString()} USD` : '$0 USD';
-  
+
   doc.text(`TOTAL:  ${totalFormateado}`, 195, finalY, { align: 'right' });
 
 
-const pageHeight = doc.internal.pageSize.height;
-  
+  const pageHeight = doc.internal.pageSize.height;
+
   // Ajustamos la posición Y para que la firma quede bien al pie
-  const footerY = pageHeight - 40; 
+  const footerY = pageHeight - 40;
 
   doc.setDrawColor('#000000');
-  doc.line(70, footerY, 140, footerY); 
+  doc.line(70, footerY, 140, footerY);
 
   // 2. Insertar la Imagen
   // doc.addImage(imgData, format, x, y, width, height)
   // Ajusta 'width' y 'height' según la proporción de tu imagen para que no se deforme.
-  const imgWidth = 40; 
-  const imgHeight = 25; 
+  const imgWidth = 40;
+  const imgHeight = 25;
   const xPos = 105 - (imgWidth / 2); // Calculamos el centro (105mm es la mitad de A4) restando la mitad del ancho de la img
 
   // Importante: 'PNG' o 'JPEG' dependiendo de tu imagen base64
@@ -127,7 +127,7 @@ const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(10);
   doc.setTextColor('#000000');
   doc.text("Fabrizio Gilgora", 105, footerY + 5, { align: 'center' });
-  
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor('#999999');

@@ -316,6 +316,7 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
                                         field.value ? "bg-blue-50 dark:bg-transparent dark:border-emerald-500/50" : "bg-transparent"
                                     )}
                                 />
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -489,6 +490,7 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
                                         onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                                     />
                                 </div>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -514,6 +516,7 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
                                         onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                                     />
                                 </div>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />

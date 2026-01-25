@@ -122,6 +122,7 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
                                                     />
                                                 </div>
                                             </FormControl>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />

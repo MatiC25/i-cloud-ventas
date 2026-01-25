@@ -57,14 +57,14 @@ const productSchema = z.object({
     color: z.string().default(""),
     estado: z.string().default("Nuevo"),
     imei: z.string().optional(),
-    costo: z.coerce.number().min(0).default(0),
-    precio: z.coerce.number().min(0).default(0),
+    costo: z.coerce.number().min(1, "El costo debe ser mayor a 0"),
+    precio: z.coerce.number().min(1, "El precio debe ser mayor a 0"),
     cantidad: z.coerce.number().int().positive().default(1),
     esParteDePago: z.boolean().default(false),
 })
 
 const pagoSchema = z.object({
-    monto: z.coerce.number().positive("El monto debe ser mayor a 0").default(0),
+    monto: z.coerce.number().positive("El monto debe ser mayor a 0").min(1, "El monto debe ser mayor a 0"),
     divisa: z.string().default("USD"),
     tipoCambio: z.coerce.number().default(1),
     destino: z.string().default("A confirmar"),
@@ -72,7 +72,7 @@ const pagoSchema = z.object({
 
 const formSchema = z.object({
     cliente: z.object({
-        nombre: z.string().min(2, "El nombre debe tener al menos 2 letras"),
+        nombre: z.string().min(2, "El nombre debe tener al menos 5 letras"),
         apellido: z.string().default(""),
         email: z.string().email("Email inválido").or(z.literal("")),
         canal: z.string().default("Local"),
