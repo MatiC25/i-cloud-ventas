@@ -107,18 +107,45 @@ export function DatosProductoMinimalista({ formConfig, productosConfig }: IDatos
             <div className="space-y-10">
                 {fields.map((field, index) => (
                     <div key={field.id} className="group relative transition-all duration-300">
-                        {/* Remove Button (Hover) */}
-                        {fields.length > 1 && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-all shadow-sm z-10"
-                                onClick={() => removeProduct(index)}
-                            >
-                                <Trash2 className="w-3 h-3" />
-                            </Button>
-                        )}
+                        {/* Product Header with Title and Actions */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
+                                    Producto {index + 1}
+                                </span>
+                                {fields.length > 1 && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground/70">
+                                        de {fields.length}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {/* Action Buttons (Hover) */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-primary hover:bg-primary/5 hover:text-primary gap-1 px-2 rounded-full text-[10px]"
+                                    onClick={() => addProduct(false)}
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    <span className="font-medium">Agregar</span>
+                                </Button>
+
+                                {fields.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() => removeProduct(index)}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
 
                         <ProductForm
                             index={index}

@@ -33,7 +33,7 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
 
     // Ensure at least one payment method exists
     if (fields.length === 0) {
-        append({ monto: 0, divisa: "USD", tipoCambio: 1550, destino: "A Confirmar" });
+        append({ monto: 0, divisa: "USD", tipoCambio: "", destino: "A Confirmar" });
     }
 
     return (
@@ -51,7 +51,7 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => append({ monto: 0, divisa: "USD", tipoCambio: 1550, destino: "Caja Principal" })}
+                        onClick={() => append({ monto: 0, divisa: "USD", tipoCambio: "", destino: "Caja Principal" })}
                         className="h-8 text-primary hover:bg-primary/5 hover:text-primary gap-1.5 px-3 rounded-full"
                     >
                         <Plus className="w-4 h-4" />
