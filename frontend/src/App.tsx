@@ -5,7 +5,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Layout/SideBar";
 import { ThemeProvider } from "@/components/ThemeProvider/ThemeProvider";
 import { ModeToggle } from "@/components/ThemeProvider/ModeToggle";
-import { Dashboard } from "@/components/Pages/Dashboard/Dashboard";
 import { DashboardV2 } from "@/components/Pages/Dashboard/DashboardV2";
 import { Estadisticas } from "@/components/Pages/Estadisticas/Estadisticas";
 import { UltimasVentas } from "@/components/Pages/Ventas/UltimasVentas";
@@ -32,6 +31,8 @@ import { Configuracion } from './components/Pages/Configuracion/Configuracion';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
 import { useUser } from "@clerk/clerk-react";
+import { SignUp} from "@clerk/clerk-react";
+import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 
 const AppLayout: React.FC = () => {
     const { activeTab, setActiveTab } = useNavigation();
@@ -86,7 +87,7 @@ const AppLayout: React.FC = () => {
                                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                 </>
                             )}
-                            <span className="font-semibold text-foreground">{activeItem?.title || "Dashboard"}</span>
+                            <span className="font-semibold text-foreground">{activeItem?.title || "dashboard-V2"}</span>
                         </div>
 
                     </div>
@@ -118,6 +119,65 @@ const AppLayout: React.FC = () => {
     );
 };
 
+const ClerkProviderWithRoutes = () => {
+  const navigate = useNavigate();
+
+  return (
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      routerPush={(to) => navigate(to)}
+      routerReplace={(to) => navigate(to, { replace: true })}
+      // Estas props fuerzan las rutas correctas
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+    >
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ConfigProvider>
+          <Routes>
+            {/* RUTA 1: Login */}
+            <Route 
+              path="/sign-in/*" 
+              element={
+                <div className="flex h-screen w-full items-center justify-center bg-background">
+                  <SignIn routing="path" path="/sign-in" />
+                </div>
+              } 
+            />
+
+            {/* RUTA 2: Registro (Esto arregla el 404) */}
+            <Route 
+              path="/sign-up/*" 
+              element={
+                <div className="flex h-screen w-full items-center justify-center bg-background">
+                  <SignUp routing="path" path="/sign-up" />
+                </div>
+              } 
+            />
+
+            {/* RUTA 3: La App Protegida (Cualquier otra ruta) */}
+            <Route
+              path="/*"
+              element={
+                <>
+                  <SignedIn>
+                    <AppContent />
+                  </SignedIn>
+                  <SignedOut>
+                     {/* Si no está logueado y trata de entrar, mándalo al login */}
+                     <div className="flex h-screen w-full items-center justify-center bg-background">
+                        <SignIn routing="path" path="/sign-in" />
+                     </div>
+                  </SignedOut>
+                </>
+              }
+            />
+          </Routes>
+        </ConfigProvider>
+      </ThemeProvider>
+    </ClerkProvider>
+  );
+};
+
 const AppContent: React.FC = () => {
     return (
         <NavigationProvider>
@@ -138,19 +198,9 @@ if (!PUBLISHABLE_KEY) {
 
 const App: React.FC = () => {
     return (
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <ConfigProvider>
-                <SignedIn>
-                    <AppContent />
-                </SignedIn>
-
-                <SignedOut>
-                    <div className="flex h-screen w-full items-center justify-center bg-background">
-                        <SignIn />
-                    </div>
-                </SignedOut>
-            </ConfigProvider>
-        </ThemeProvider>
+        <BrowserRouter>
+            <ClerkProviderWithRoutes />
+        </BrowserRouter>
     );
 };
 
