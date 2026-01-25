@@ -8,7 +8,7 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [activeTab, setActiveTab] = useState("dashboard-v2");
+    const [activeTab, setActiveTab] = useState("dashboard-V2");
 
     return (
         <NavigationContext.Provider value={{ activeTab, setActiveTab }}>
