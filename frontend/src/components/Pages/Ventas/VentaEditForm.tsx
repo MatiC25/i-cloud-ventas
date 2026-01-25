@@ -21,7 +21,7 @@ const formSchema = z.object({
     monto: z.coerce.number().min(0, "El monto no puede ser negativo"),
     costo: z.coerce.number().min(0, "El costo no puede ser negativo"),
     cantidad: z.coerce.number().int().min(1, "La cantidad debe ser al menos 1"),
-    tipoCambio: z.coerce.number().min(1, "El tipo de cambio debe ser mayor a 0"),
+    tipoCambio: z.coerce.number().min(0, "El tipo de cambio debe ser mayor a 0"),
     conversion: z.coerce.number().min(0, "La conversión no puede ser negativa"),
 })
 

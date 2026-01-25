@@ -133,7 +133,7 @@ class VentaService {
           monto: pago.monto,
           divisa: pago.divisa,
           destino: pago.destino || "A confirmar",
-          comentarios: `Tipo Pago: ${pago.tipo || ''} - Cambio: ${pago.tipoCambio || 1}${valorTotalParteDePago > 0 ? ` (Incluye canje: $${valorTotalParteDePago})` : ''}`,
+          comentarios: `Tipo Pago: ${pago.tipo || ''} - Cambio: ${pago.tipoCambio || ''}${valorTotalParteDePago > 0 ? ` (Incluye canje: $${valorTotalParteDePago})` : ''}`,
           auditoria: usuarioLogueado,
           id: masterId
         };

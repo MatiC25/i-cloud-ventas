@@ -81,7 +81,7 @@ export function StickyResume({ loading }: { loading: boolean }) {
                                     <span className="w-1 h-1 rounded-full bg-emerald-500"></span> Entrega
                                 </h5>
                                 <div className="text-sm pl-2.5 border-l-2 border-border/50 ml-0.5">
-                                    <p className="font-medium text-foreground">{transaccion?.envioRetiro || "Retiro en local"}</p>
+                                    <p className="font-medium text-foreground">{transaccion?.envioRetiro || "Envio | Mensajeria"}</p>
                                 </div>
                             </div>
 

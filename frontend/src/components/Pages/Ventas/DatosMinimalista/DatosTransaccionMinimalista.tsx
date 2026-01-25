@@ -201,8 +201,10 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
                                 <FormLabel className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider pl-1">Método de Entrega</FormLabel>
                                 <Combobox
                                     options={[
-                                        { value: "Retiro", label: "Retiro en local" },
-                                        { value: "Envio", label: "Envío a domicilio" }
+                                        { value: "Envio | Mensajeria", label: "Envio | Mensajeria" },
+                                        { value: "Envío Personalizado", label: "Envío Personalizado" },
+                                        { value: "Oficina Arg", label: "Oficina Argentina" },
+                                        { value: "Oficina Uy", label: "Oficina Uruguay" }
                                     ]}
                                     value={field.value}
                                     onChange={field.onChange}

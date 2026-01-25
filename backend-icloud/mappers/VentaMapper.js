@@ -114,7 +114,7 @@ class VentaMapper {
         var id_operacion = idOverride || IdGenerator.getNextId(SHEET.CLIENTES_MINORISTAS, "N° ID");
 
         var montoVenta = Number(raw.transaccion.monto) || 0;
-        var tipoCambio = Number(raw.transaccion.tipoCambio) || 1;
+        var tipoCambio = Number(raw.transaccion.tipoCambio) || 0;
 
         // Safely access sub-objects
         var prod = raw.producto || {};

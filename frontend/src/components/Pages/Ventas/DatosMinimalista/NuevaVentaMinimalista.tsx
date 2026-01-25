@@ -66,7 +66,7 @@ const productSchema = z.object({
 const pagoSchema = z.object({
     monto: z.coerce.number().positive("El monto debe ser mayor a 0").min(1, "El monto debe ser mayor a 0"),
     divisa: z.string().default("USD"),
-    tipoCambio: z.coerce.number().default(1),
+    tipoCambio: z.coerce.number().default(0),
     destino: z.string().default("A confirmar"),
 })
 
@@ -81,7 +81,7 @@ const formSchema = z.object({
     productos: z.array(productSchema).min(1, "Debes agregar al menos un producto"),
     pagos: z.array(pagoSchema).min(1, "Debes agregar al menos un método de pago"),
     transaccion: z.object({
-        envioRetiro: z.string().default("Retiro"),
+        envioRetiro: z.string().default("Envio | Mensajeria"),
         comentarios: z.string().default(""),
         descargarComprobante: z.boolean().default(false),
     }),
@@ -118,7 +118,7 @@ function NuevaVentaForm({ config }: { config: any }) {
             cliente: { nombre: "", apellido: "", email: "", canal: "", contacto: "" },
             productos: [{ tipo: "", modelo: "", capacidad: "", color: "", estado: "Nuevo", imei: "", costo: "", precio: "", cantidad: 1, esParteDePago: false }],
             pagos: [{ monto: "", divisa: "USD", tipoCambio: "", destino: "A confirmar" }],
-            transaccion: { envioRetiro: "Retiro", comentarios: "", descargarComprobante: false },
+            transaccion: { envioRetiro: "Envio | Mensajeria", comentarios: "", descargarComprobante: false },
             parteDePago: { esParteDePago: false, tipo: "", modelo: "", capacidad: "", costo: "" },
             trazabilidad: { idOperacion: "", fecha: new Date().toISOString(), usuario: "" },
         },
