@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
+import { BrowserRouter, Route, Routes, useNavigate, Navigate } from 'react-router-dom';
 import { ConfigProvider } from './components1/Admin/ConfigContext';
 
+// --- TUS IMPORTS DE UI (Sidebar, Themes, etc.) ---
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Layout/SideBar";
 import { ThemeProvider } from "@/components/ThemeProvider/ThemeProvider";
@@ -13,71 +15,63 @@ import { HistorialCompleto } from "@/components/Pages/Historial/HistorialComplet
 import { Toaster } from "@/components/ui/sonner";
 import { SystemSettings } from './components1/Admin/SystemSettings';
 import { SideBarData } from "@/components/Layout/SideBarData";
-import { Bell, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ChevronRight, Loader2 } from "lucide-react"; // Importamos Loader2
 import { TasksPage } from './components/Pages/Tasks/TasksPage';
 import { AdminPanel } from './components/Pages/AdminPanel/AdminPanel';
-import { CashOpeningDialog } from './components/Caja/CashOpeningDialog';
 import { Configuracion } from './components/Pages/Configuracion/Configuracion';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
-import { useUser } from "@clerk/clerk-react";
-import { SignUp} from "@clerk/clerk-react";
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { 
+  ClerkProvider, 
+  SignedIn, 
+  SignedOut, 
+  SignIn, 
+  SignUp, 
+  RedirectToSignIn, // <--- IMPORTANTE: Usaremos esto
+  useUser,
+  ClerkLoaded,     // <--- Para saber cuando terminó de cargar Clerk
+  ClerkLoading     // <--- Para mostrar spinner mientras carga
+} from "@clerk/clerk-react";
 
+import { NuevaVentaMinimalista } from './components/Pages/Ventas/DatosMinimalista/NuevaVentaMinimalista';
+import { TaskDrawer } from './components/Pages/Tasks/TaskDrawer';
+
+// --- 1. COMPONENTE APP LAYOUT (Lógica del Dashboard) ---
 const AppLayout: React.FC = () => {
     const { activeTab, setActiveTab } = useNavigation();
-    const { user, isLoaded, isSignedIn } = useUser();
+    const { user, isLoaded } = useUser();
 
-
+    // Memorizamos la data del sidebar para filtrar por rol
     const filteredSideBarData = useMemo(() => {
-        const isAdmin = user?.publicMetadata?.role === "admin";
+        if (!isLoaded || !user) return SideBarData; // Retorno seguro si no ha cargado
 
+        const isAdmin = user?.publicMetadata?.role === "admin";
         return {
             ...SideBarData,
-            // Filtramos los grupos principales
             navGroups: SideBarData.navGroups.map(group => ({
                 ...group,
                 items: group.items.filter(item => {
-                    // Si es "admin-panel" (o tiene la flag requiresAdmin), revisamos el rol
-                    if (item.url === "admin-panel" || item.requiresAdmin) {
-                        return isAdmin;
-                    }
+                    if (item.url === "admin-panel" || item.requiresAdmin) return isAdmin;
                     return true;
                 })
             })),
-            // Filtramos el menú secundario
             navSecondary: SideBarData.navSecondary.filter(item => {
-                if (item.url === "admin-panel" || item.requiresAdmin) {
-                    return isAdmin;
-                }
+                if (item.url === "admin-panel" || item.requiresAdmin) return isAdmin;
                 return true;
             })
         };
     }, [user, isLoaded]);
 
-    // Calculate Breadcrumb
+    // Breadcrumb calculation
     const activeGroup = filteredSideBarData.navGroups.find(g => g.items.some(i => i.url === activeTab));
     const activeItem = activeGroup?.items.find(i => i.url === activeTab) || filteredSideBarData.navSecondary.find(i => i.url === activeTab);
 
     return (
         <SidebarProvider>
             <AppSidebar onTabChange={setActiveTab} activeTab={activeTab} data={filteredSideBarData} />
-
             <main className="w-full bg-background min-h-screen transition-colors duration-300">
-
                 {/* Header */}
                 <div className="sticky top-0 z-50 p-4 border-b border-border bg-background flex items-center justify-between gap-4">
-
                     <div className="flex items-center gap-2">
                         <SidebarTrigger />
                         <div className="flex items-center gap-1 text-sm">
@@ -87,18 +81,16 @@ const AppLayout: React.FC = () => {
                                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                 </>
                             )}
-                            <span className="font-semibold text-foreground">{activeItem?.title || "dashboard-V2"}</span>
+                            <span className="font-semibold text-foreground">{activeItem?.title || "Dashboard"}</span>
                         </div>
-
                     </div>
-
                     <div className="flex items-center gap-4">
                         <TaskDrawer />
                         <ModeToggle />
                     </div>
                 </div>
 
-                {/* Área de contenido */}
+                {/* Contenido */}
                 <div className="p-8">
                     {activeTab === "nueva-venta-minimalista" && <NuevaVentaMinimalista />}
                     {activeTab === "tasks" && <TasksPage />}
@@ -111,71 +103,10 @@ const AppLayout: React.FC = () => {
                     {activeTab === "dashboard-V2" && <DashboardV2 />}
                     {activeTab === "configuracion-v2" && <Configuracion />}
                 </div>
-
             </main>
             <Toaster />
-
         </SidebarProvider>
     );
-};
-
-const ClerkProviderWithRoutes = () => {
-  const navigate = useNavigate();
-
-  return (
-    <ClerkProvider
-      publishableKey={PUBLISHABLE_KEY}
-      routerPush={(to) => navigate(to)}
-      routerReplace={(to) => navigate(to, { replace: true })}
-      // Estas props fuerzan las rutas correctas
-      signInFallbackRedirectUrl="/"
-      signUpFallbackRedirectUrl="/"
-    >
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <ConfigProvider>
-          <Routes>
-            {/* RUTA 1: Login */}
-            <Route 
-              path="/sign-in/*" 
-              element={
-                <div className="flex h-screen w-full items-center justify-center bg-background">
-                  <SignIn routing="path" path="/sign-in" />
-                </div>
-              } 
-            />
-
-            {/* RUTA 2: Registro (Esto arregla el 404) */}
-            <Route 
-              path="/sign-up/*" 
-              element={
-                <div className="flex h-screen w-full items-center justify-center bg-background">
-                  <SignUp routing="path" path="/sign-up" />
-                </div>
-              } 
-            />
-
-            {/* RUTA 3: La App Protegida (Cualquier otra ruta) */}
-            <Route
-              path="/*"
-              element={
-                <>
-                  <SignedIn>
-                    <AppContent />
-                  </SignedIn>
-                  <SignedOut>
-                     {/* Si no está logueado y trata de entrar, mándalo al login */}
-                     <div className="flex h-screen w-full items-center justify-center bg-background">
-                        <SignIn routing="path" path="/sign-in" />
-                     </div>
-                  </SignedOut>
-                </>
-              }
-            />
-          </Routes>
-        </ConfigProvider>
-      </ThemeProvider>
-    </ClerkProvider>
-  );
 };
 
 const AppContent: React.FC = () => {
@@ -186,15 +117,80 @@ const AppContent: React.FC = () => {
     )
 };
 
-import { ClerkProvider, SignedIn, SignedOut, SignIn, UserButton } from "@clerk/clerk-react";
-import { NuevaVentaMinimalista } from './components/Pages/Ventas/DatosMinimalista/NuevaVentaMinimalista';
-import { TaskDrawer } from './components/Pages/Tasks/TaskDrawer';
-
+// --- 2. CONFIGURACIÓN DE CLERK Y RUTAS ---
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!PUBLISHABLE_KEY) {
     throw new Error("Missing Publishable Key")
 }
+
+const ClerkProviderWithRoutes = () => {
+  const navigate = useNavigate();
+
+  return (
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      routerPush={(to) => navigate(to)}
+      routerReplace={(to) => navigate(to, { replace: true })}
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+    >
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ConfigProvider>
+            
+            {/* SPINNER DE CARGA: Se muestra mientras Clerk averigua si estás logueado */}
+            <ClerkLoading>
+                <div className="flex h-screen w-full items-center justify-center bg-background">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                </div>
+            </ClerkLoading>
+
+            {/* CONTENIDO: Solo carga cuando Clerk está listo */}
+            <ClerkLoaded>
+              <Routes>
+                {/* Ruta de Login */}
+                <Route 
+                  path="/sign-in/*" 
+                  element={
+                    <div className="flex h-screen w-full items-center justify-center bg-background">
+                      <SignIn routing="path" path="/sign-in" />
+                    </div>
+                  } 
+                />
+
+                {/* Ruta de Registro */}
+                <Route 
+                  path="/sign-up/*" 
+                  element={
+                    <div className="flex h-screen w-full items-center justify-center bg-background">
+                      <SignUp routing="path" path="/sign-up" />
+                    </div>
+                  } 
+                />
+
+                {/* Ruta Principal Protegida */}
+                <Route
+                  path="/*"
+                  element={
+                    <>
+                      <SignedIn>
+                        <AppContent />
+                      </SignedIn>
+                      <SignedOut>
+                         {/* Si entra a la raíz y no está logueado, REDIRIGIR al login */}
+                         <RedirectToSignIn />
+                      </SignedOut>
+                    </>
+                  }
+                />
+              </Routes>
+            </ClerkLoaded>
+            
+        </ConfigProvider>
+      </ThemeProvider>
+    </ClerkProvider>
+  );
+};
 
 const App: React.FC = () => {
     return (
