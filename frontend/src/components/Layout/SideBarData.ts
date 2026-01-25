@@ -48,7 +48,7 @@ export const SideBarData: SideBarDataType = {
       items: [
         {
           title: "Dashboard",
-          url: "dashboard",
+          url: "dashboard-V2",
           icon: IconDashboard,
         },
         {
@@ -84,6 +84,12 @@ export const SideBarData: SideBarDataType = {
         {
           title: "Admin",
           url: "admin-panel",
+          icon: IconUsers,
+          requiresAdmin: true
+        },
+        {
+          title: "Configuracion",
+          url: "configuracion-v2",
           icon: IconSettings,
           requiresAdmin: true
         }
@@ -91,11 +97,5 @@ export const SideBarData: SideBarDataType = {
     }
   ],
   navSecondary: [
-    {
-      title: "Configuracion",
-      url: "configuracion",
-      icon: IconSettings,
-      requiresAdmin: true
-    }
-  ]
+      ]
 }

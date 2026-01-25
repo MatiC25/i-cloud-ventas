@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { getRecentOperations, getOperaciones, updateVenta, deleteVenta, updateOperacion, deleteOperacion } from '@/services/api-back';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Plus, Edit2, Trash2, MoreHorizontal, ShoppingCart } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Plus, Edit2, Trash2, MoreHorizontal, ShoppingCart, Users, BookOpen } from 'lucide-react';
 import { motion, Variants } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OperacionReciente, IVentaTabla, IOperacion } from '@/types';
@@ -123,6 +123,7 @@ export function normalizeCurrency(value?: string): "USD" | "ARS" | "EUR" {
 
 export function HistorialCompleto() {
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('day');
+    const [activeTableTab, setActiveTableTab] = useState<'minorista' | 'mayorista' | 'libro'>('minorista');
     const { setActiveTab } = useNavigation();
 
     // Fetch with limit=0 to get ALL operations for accurate stats
@@ -349,8 +350,8 @@ export function HistorialCompleto() {
                 return (
                     <div
                         className={`text-right font-bold ${row.original.tipo === "Ingreso"
-                                ? "text-green-600"
-                                : "text-red-600"
+                            ? "text-green-600"
+                            : "text-red-600"
                             }`}
                     >
                         {row.original.monto.toLocaleString("en-US", {
@@ -484,11 +485,54 @@ export function HistorialCompleto() {
                 </Card>
             </motion.div>
 
-            {/* Tables Stack */}
-            <motion.div variants={itemVariants} className="space-y-8">
-                <DataTable title="Clientes Minoristas" columns={ventaColumns} data={minoristaData} defaultOpen={false} />
-                <DataTable title="Clientes Mayoristas" columns={ventaColumns} data={mayoristaData} defaultOpen={false} />
-                <DataTable title="Gastos y Movimientos" columns={gastoColumns} data={gastosData} defaultOpen={false} />
+            {/* Tables with Tabs */}
+            <motion.div variants={itemVariants}>
+                <Tabs value={activeTableTab} onValueChange={(v) => setActiveTableTab(v as 'minorista' | 'mayorista' | 'libro')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-6">
+                        <TabsTrigger value="minorista" className="flex items-center gap-2">
+                            <Users size={16} />
+                            Clientes Minoristas ({minoristaData.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="mayorista" className="flex items-center gap-2">
+                            <Users size={16} />
+                            Clientes Mayoristas ({mayoristaData.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="libro" className="flex items-center gap-2">
+                            <BookOpen size={16} />
+                            Libro Diario ({gastosData.length})
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="minorista">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1">
+                                <Users className="text-blue-500" size={20} />
+                                <h3 className="text-lg font-semibold">Ventas Minoristas</h3>
+                            </div>
+                            <DataTable columns={ventaColumns} data={minoristaData} />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="mayorista">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1">
+                                <Users className="text-purple-500" size={20} />
+                                <h3 className="text-lg font-semibold">Ventas Mayoristas</h3>
+                            </div>
+                            <DataTable columns={ventaColumns} data={mayoristaData} />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="libro">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1">
+                                <BookOpen className="text-emerald-500" size={20} />
+                                <h3 className="text-lg font-semibold">Libro Diario - Gastos y Movimientos</h3>
+                            </div>
+                            <DataTable columns={gastoColumns} data={gastosData} />
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </motion.div>
 
             {/* Edit DIALOGS */}

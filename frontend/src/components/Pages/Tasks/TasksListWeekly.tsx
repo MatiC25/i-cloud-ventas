@@ -11,7 +11,7 @@ import {
     parseISO,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Settings2, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -220,10 +220,24 @@ export function TasksListWeekly({ onNewTask, onEditTask }: TasksListWeeklyProps)
                                                 {task.descripcion}
                                             </p>
                                             <div className="flex items-center justify-between mt-1">
-                                                <div className={cn(
-                                                    "w-2 h-2 rounded-full",
-                                                    task.estado === "Pendiente" ? "bg-amber-400" : "bg-emerald-500"
-                                                )} />
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn(
+                                                        "w-2 h-2 rounded-full",
+                                                        task.estado === "Pendiente" ? "bg-amber-400" : "bg-emerald-500"
+                                                    )} />
+                                                    {task.link && (
+                                                        <a
+                                                            href={task.link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-muted-foreground hover:text-blue-500 transition-colors"
+                                                            title="Abrir enlace"
+                                                        >
+                                                            <ExternalLink className="h-3 w-3" />
+                                                        </a>
+                                                    )}
+                                                </div>
                                                 {task.cliente && (
                                                     <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
                                                         {task.cliente}

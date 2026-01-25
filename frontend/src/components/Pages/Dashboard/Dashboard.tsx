@@ -93,6 +93,7 @@ export function Dashboard() {
 
 
     const seccionesCuentas = useMemo(() => {
+        console.log(stats);
         if (!stats) return { ars: [], usd: [] };
 
         const ars = Object.entries(stats.billeterasDetalle.ARS).map(([name, bal]) => ({
@@ -215,10 +216,10 @@ export function Dashboard() {
                     <motion.div variants={itemVariants}>
                         <StatCard
                             title="Profit"
-                            value={`$${(stats?.stats.mes.profit || 0)?.toLocaleString()}`}
+                            value={`$${(stats?.stats.hoy.profit || 0)?.toLocaleString()}`}
                             icon={DollarSign}
                             color="bg-blue-500"
-                            subtext="Profit de Mes"
+                            subtext="Profit del Día"
                         />
                     </motion.div>
 

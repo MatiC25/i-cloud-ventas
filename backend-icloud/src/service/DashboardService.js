@@ -592,5 +592,131 @@ class DashboardService {
         };
     }
 
+    static _processChartsData(ventas) {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+
+    // Inicializamos las estructuras de agrupación
+    // Usamos objetos/mapas para agrupar rápido por clave (ej: "10:00", "Día 05")
+    const groups = {
+      hoy: {},      // Agrupado por Hora (09:00, 10:00...)
+      mes: {},      // Agrupado por Día (1, 2, 3...)
+      anio: {},     // Agrupado por Mes (Ene, Feb...)
+      historico: {} // Agrupado por Mes/Año (2025-01, 2025-02...)
+    };
+
+    ventas.forEach(venta => {
+      const fecha = new Date(venta["Fecha"]);
+      
+      // Validación básica para evitar fechas inválidas
+      if (isNaN(fecha.getTime())) return;
+
+      const monto = Number(venta["Monto"]) || 0;
+      const profit = Number(venta["Profit Bruto"]) || 0;
+      
+      // Datos auxiliares de fecha
+      const vYear = fecha.getFullYear();
+      const vMonth = fecha.getMonth(); // 0-11
+      const vDate = fecha.getDate();   // 1-31
+      const vHour = fecha.getHours();  // 0-23
+
+      // --- LOGICA DE AGRUPACIÓN ---
+
+      // 1. HISTÓRICO (Todo lo que existe, agrupado por Año-Mes)
+      const keyHist = `${vYear}-${String(vMonth + 1).padStart(2, '0')}`; // "2026-01"
+      if (!groups.historico[keyHist]) groups.historico[keyHist] = { name: keyHist, total: 0, profit: 0, count: 0 };
+      groups.historico[keyHist].total += monto;
+      groups.historico[keyHist].profit += profit;
+      groups.historico[keyHist].count += 1;
+
+      // 2. AÑO ACTUAL (Agrupado por Mes)
+      if (vYear === currentYear) {
+        // Usamos el nombre corto del mes o número
+        const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        const keyAnio = meses[vMonth]; 
+        
+        if (!groups.anio[keyAnio]) groups.anio[keyAnio] = { name: keyAnio, order: vMonth, total: 0, profit: 0, count: 0 };
+        groups.anio[keyAnio].total += monto;
+        groups.anio[keyAnio].profit += profit;
+        groups.anio[keyAnio].count += 1;
+      }
+
+      // 3. MES ACTUAL (Agrupado por Día)
+      if (vYear === currentYear && vMonth === currentMonth) {
+        const keyMes = `Día ${vDate}`;
+        if (!groups.mes[keyMes]) groups.mes[keyMes] = { name: keyMes, order: vDate, total: 0, profit: 0, count: 0 };
+        groups.mes[keyMes].total += monto;
+        groups.mes[keyMes].profit += profit;
+        groups.mes[keyMes].count += 1;
+      }
+
+      // 4. HOY (Agrupado por Hora)
+      if (vYear === currentYear && vMonth === currentMonth && vDate === currentDay) {
+        const keyHoy = `${String(vHour).padStart(2, '0')}:00`;
+        if (!groups.hoy[keyHoy]) groups.hoy[keyHoy] = { name: keyHoy, order: vHour, total: 0, profit: 0, count: 0 };
+        groups.hoy[keyHoy].total += monto;
+        groups.hoy[keyHoy].profit += profit;
+        groups.hoy[keyHoy].count += 1;
+      }
+    });
+
+    // --- TRANSFORMACIÓN A ARRAY Y ORDENAMIENTO ---
+    // Recharts necesita Arrays, no Objetos. Y necesitan estar ordenados cronológicamente.
+
+    const sortFn = (a, b) => (a.order !== undefined ? a.order - b.order : a.name.localeCompare(b.name));
+    
+    return {
+      hoy: Object.values(groups.hoy).sort(sortFn),
+      mes: Object.values(groups.mes).sort(sortFn),
+      anio: Object.values(groups.anio).sort(sortFn),
+      historico: Object.values(groups.historico).sort((a, b) => a.name.localeCompare(b.name))
+    };
+  }
+
+  /**
+   * Obtiene SOLO la data para los gráficos, separada de los contadores.
+   * Puedes cachear esto por separado si quieres.
+   */
+  static getVentasCharts() {
+    // Clave de caché específica para gráficos (opcional)
+    const CACHE_KEY_CHARTS = "DASHBOARD_CHARTS_DATA";
+    const cached = CacheUtil.get(CACHE_KEY_CHARTS);
+    
+    if (cached != null) {
+      return { source: "cache", data: cached };
+    }
+
+    // Obtenemos todas las ventas (reutilizamos tu lógica existente para traer raw data)
+    // Asumo que tienes un método interno que solo trae el array de ventas crudo
+    // Si no, usa DashboardService.getVentasStats() y extrae, o mejor crea un getRawVentas()
+    const rawVentas = this._getRawVentas(); // <--- VER NOTA ABAJO
+    
+    // Procesamos con el nuevo algoritmo
+    const chartData = this._processChartsData(rawVentas);
+
+    // Guardamos en caché (ej: 10 minutos)
+    CacheUtil.put(CACHE_KEY_CHARTS, chartData, 600); 
+
+    return {
+      source: "rebuild",
+      data: chartData
+    };
+  }
+
+  // Helper simple para obtener las ventas crudas sin procesar
+  // Esto debería ir en tu capa de acceso a datos (DAO) o aquí mismo
+  static _getRawVentas() {
+        const ventaRepo = new _GenericRepository("Clientes Minoristas");
+        const ventaRepoMayorista = new _GenericRepository("Clientes Mayoristas");
+
+        const ventasDataMinorista = ventaRepo.findAll();
+        const ventasDataMayorista = ventaRepoMayorista.findAll();
+
+        const ventas = ventasDataMinorista.concat(ventasDataMayorista);
+        return ventas;
+   }
+
 
 }

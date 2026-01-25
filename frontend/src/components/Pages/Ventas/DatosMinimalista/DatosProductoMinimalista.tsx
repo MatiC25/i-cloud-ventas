@@ -53,8 +53,8 @@ export function DatosProductoMinimalista({ formConfig, productosConfig }: IDatos
             color: "",
             estado: "Nuevo",
             imei: "",
-            costo: 0,
-            precio: 0,
+            costo: "",
+            precio: "",
             cantidad: 1,
             esParteDePago: isTradeIn
         })

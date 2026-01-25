@@ -84,6 +84,54 @@ class ConfigService {
         return { message: "Configuración guardada. El sistema ahora apunta al nuevo Excel." };
     }
 
+
+    static serviceSaveConfigSheets(payload){
+
+        try {
+        const ss = getDB();
+        
+        if(payload.productos){
+            const sheet = ss.getSheetByName("Config_Productos");
+            if (!sheet) {
+                throw new Error("Hoja 'Config_Productos' no encontrada.");
+            }
+            
+            sheet.appendRow(["Categoria", "Modelo", "Variantes", "Colores"]);
+            payload.productos.forEach(producto => {
+                sheet.appendRow([producto.categoria, producto.modelo, producto.variantes, producto.colores]);
+            });
+        }
+
+        if(payload.gastos){
+            const sheet = ss.getSheetByName("Config_Gastos");
+            if (!sheet) {
+                throw new Error("Hoja 'Config_Gastos' no encontrada.");
+            }
+            
+            sheet.appendRow(["Destinos", "Divisas", "Tipo de Movimiento", "Categoria de Movimiento"]);
+            payload.gastos.forEach(gasto => {
+                sheet.appendRow([gasto.destinos, gasto.divisas, gasto.tipoDeMovimiento, gasto.categoriaDeMovimiento]);
+            });
+        }
+
+        if(payload.form){
+            const sheet = ss.getSheetByName("Config_Form");
+            if (!sheet) {
+                throw new Error("Hoja 'Config_Form' no encontrada.");
+            }
+            
+            sheet.appendRow(["Canal de Venta", "Estado"]);
+            payload.form.forEach(form => {
+                sheet.appendRow([form.canalDeVenta, form.estado]);
+            });
+        }
+            return { message: "Configuración guardada correctamente." };
+        } catch (error) {
+            return { message: "Error al guardar la configuración." };
+        }
+
+    }
+
     /**
      * Guarda las credenciales de Facebook recibidas por API.
      * @param {Object} payload - { fb_token, ad_account_id, sheet_id, admin_key }

@@ -283,6 +283,21 @@ export interface IDashboardStatsResponse {
     ultimaModificacion: string;
 }
 
+export interface DataPoint {
+  name: string;
+  total: number;
+  profit: number;
+  count: number;
+  order?: number;
+}
+
+export interface IChartsData {
+  hoy: DataPoint[];
+  mes: DataPoint[];
+  anio: DataPoint[];
+  historico: DataPoint[];
+}
+
 // Sub-tipos para mantener el código limpio
 
 export interface MetricsBucket {

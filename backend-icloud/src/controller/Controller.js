@@ -190,6 +190,10 @@ function doPost(e) {
         result = ConfigService.serviceHealthCheck();
         break;
 
+      case "save_config_sheets":
+        result = ConfigService.serviceSaveConfigSheets(payload);
+        break;
+
       // ============= //
       // Stock Service //
       // ============= //
@@ -246,6 +250,10 @@ function doPost(e) {
 
       case "getLiveBalances":
         result = DashboardService.getLiveBalances();
+        break;
+
+      case "getVentasCharts":
+        result = DashboardService.getVentasCharts();
         break;
 
       // ============= //

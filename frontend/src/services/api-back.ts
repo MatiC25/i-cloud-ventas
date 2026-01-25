@@ -20,7 +20,8 @@ import {
     IFacebookConfig,
     IRecentOperations,
     IConfig,
-    IConfigResponse
+    IConfigResponse,
+    IChartsData
 } from "../types";
 import { adaptarVentaParaTabla } from "../types";
 import { IVentaTabla } from "@/types";
@@ -206,6 +207,10 @@ export const getDashboardStats = async () => {
     return apiRequest<IDashboardCacheEnvelope>({ action: 'getDashboardStats' });
 }
 
+export const getVentasCharts = async () => {
+    return apiRequest<IChartsData>({ action: 'getVentasCharts' });
+}
+
 
 // ==================== //
 // ====== TAREAS ====== //
@@ -250,3 +255,35 @@ export const saveFacebookConfig = async (config: IFacebookConfig, sessionId: str
     return apiRequest({ action: 'save_facebook_config', sessionId, payload: config });
 }
 
+// ========================== //
+// ====== CONFIGURACION ====== //
+// ========================== //
+
+export interface IConfigProductoPayload {
+    categoria: string;
+    modelo: string;
+    variantes: string;
+    colores: string;
+}
+
+export interface IConfigGastoPayload {
+    destinos: string;
+    divisas: string;
+    tipoDeMovimiento: string;
+    categoriaDeMovimiento: string;
+}
+
+export interface IConfigFormPayload {
+    canalDeVenta: string;
+    estado: string;
+}
+
+export interface IConfigSheetsPayload {
+    productos?: IConfigProductoPayload[];
+    gastos?: IConfigGastoPayload[];
+    form?: IConfigFormPayload[];
+}
+
+export const saveConfigSheets = async (payload: IConfigSheetsPayload) => {
+    return apiRequest<{ message: string }>({ action: 'save_config_sheets', payload });
+}

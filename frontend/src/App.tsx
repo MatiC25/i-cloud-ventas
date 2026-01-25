@@ -28,6 +28,7 @@ import {
 import { TasksPage } from './components/Pages/Tasks/TasksPage';
 import { AdminPanel } from './components/Pages/AdminPanel/AdminPanel';
 import { CashOpeningDialog } from './components/Caja/CashOpeningDialog';
+import { Configuracion } from './components/Pages/Configuracion/Configuracion';
 
 import { NavigationProvider, useNavigation } from '@/components/Layout/NavigationContext';
 import { useUser } from "@clerk/clerk-react";
@@ -98,8 +99,6 @@ const AppLayout: React.FC = () => {
 
                 {/* Área de contenido */}
                 <div className="p-8">
-                    {activeTab === "dashboard" && <Dashboard />}
-                    {/* {activeTab === "dashboard-v2" && <DashboardV2 />} */}
                     {activeTab === "nueva-venta-minimalista" && <NuevaVentaMinimalista />}
                     {activeTab === "tasks" && <TasksPage />}
                     {activeTab === "estadisticas" && <Estadisticas />}
@@ -108,11 +107,13 @@ const AppLayout: React.FC = () => {
                     {activeTab === "historial-completo" && <HistorialCompleto />}
                     {activeTab === "advanced" && <SystemSettings />}
                     {activeTab === "admin-panel" && (user?.publicMetadata.role === "admin" ? <AdminPanel /> : <div>Acceso denegado</div>)}
+                    {activeTab === "dashboard-V2" && <DashboardV2 />}
+                    {activeTab === "configuracion-v2" && <Configuracion />}
                 </div>
 
             </main>
             <Toaster />
-            <CashOpeningDialog />
+
         </SidebarProvider>
     );
 };

@@ -108,6 +108,16 @@ class VentaService {
       // Ahora registramos los pagos en efectivo/transferencia
       const pagos = payloadRaw.pagos || [];
 
+      // Preparar descripción del cliente y productos para el detalle
+      const nombreCliente = payloadRaw.cliente
+        ? `${payloadRaw.cliente.nombre || ''} ${payloadRaw.cliente.apellido || ''}`.trim() || 'Sin Nombre'
+        : 'Sin Nombre';
+
+      const descripcionProductos = listaProductos
+        .filter(p => !p.esParteDePago) // Solo productos vendidos, no canjes
+        .map(p => [p.tipo, p.modelo, p.capacidad].filter(Boolean).join(' '))
+        .join(', ') || 'Producto';
+
       // Calculamos el monto efectivo a registrar (total pagos - valor canje ya está incluido en el precio)
       // El monto de los pagos debería ser: Precio Total Venta - Valor Canje
       // Los pagos representan el dinero real que entra, no incluyen el canje
@@ -117,7 +127,7 @@ class VentaService {
 
         const operacionDto = {
           fecha: new Date(),
-          detalle: `Venta ID: ${masterId}`,
+          detalle: `Venta: ${nombreCliente} - ${descripcionProductos}`,
           tipoMovimiento: "Ingreso",
           categoriaMovimiento: "Venta",
           monto: pago.monto,
@@ -144,6 +154,7 @@ class VentaService {
       throw e;
     }
   }
+
 
 
   static getHistorialVentas() {

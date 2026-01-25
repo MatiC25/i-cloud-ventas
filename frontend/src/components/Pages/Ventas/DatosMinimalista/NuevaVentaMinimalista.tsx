@@ -127,8 +127,6 @@ function NuevaVentaForm({ config }: { config: any }) {
     async function onSubmit(values: FormValues) {
         setLoading(true)
 
-        const toastId = toast.loading("Registrando venta en el sistema...");
-
         try {
             const pagoPrincipal = values.pagos[0] || { monto: 0, divisa: "USD", tipoCambio: 1500, destino: "A confirmar" };
 
@@ -148,33 +146,56 @@ function NuevaVentaForm({ config }: { config: any }) {
                 trazabilidad: values.trazabilidad,
             }
 
-            const response = await guardarVenta(ventaFinal);
+            // Guardamos los valores para el PDF antes de resetear
+            const shouldDownloadPDF = values.transaccion.descargarComprobante;
+            const ventaParaPDF = { ...ventaFinal };
 
-            if (response.status === 'success') {
-                const idFactura = response.id_operacion ? response.id_operacion.toString().padStart(8, '0') : "00000000";
+            // --- OPTIMISTIC UI: Mostramos éxito inmediatamente ---
+            toast.success("¡Venta registrada!", {
+                description: "Procesando en segundo plano...",
+                duration: 2000,
+            });
 
-                // Generación PDF (si corresponde)
-                if (values.transaccion.descargarComprobante) {
-                    generarPDFVenta(ventaFinal, idFactura);
-                }
+            // Reseteamos el form inmediatamente para que el usuario pueda seguir
+            form.reset();
+            setLoading(false);
 
-                toast.success(response.message || "Venta guardada exitosamente", {
-                    id: toastId,
+            // --- Ejecutamos la operación en background ---
+            guardarVenta(ventaFinal)
+                .then((response) => {
+                    if (response.status === 'success') {
+                        const idFactura = response.id_operacion ? response.id_operacion.toString().padStart(8, '0') : "00000000";
+
+                        // Generación PDF (si corresponde)
+                        if (shouldDownloadPDF) {
+                            generarPDFVenta(ventaParaPDF, idFactura);
+                        }
+
+                        // Notificación final sutil
+                        toast.success("Venta sincronizada ✓", {
+                            description: `ID: #${idFactura}`,
+                            duration: 3000,
+                        });
+                    } else {
+                        // Si falla, mostramos error
+                        toast.error(response.message || "Error al sincronizar la venta", {
+                            description: "La venta puede no haberse guardado correctamente",
+                            duration: 5000,
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                    toast.error("Error de conexión", {
+                        description: "La venta puede no haberse guardado. Revisa tu conexión.",
+                        duration: 5000,
+                    });
                 });
 
-                form.reset()
-            } else {
-                toast.error(response.message || "Error desconocido al guardar la venta", {
-                    id: toastId,
-                });
-            }
         } catch (error: any) {
             console.error(error)
-            toast.error(error.message || "Error al guardar la venta", {
-                id: toastId,
-            });
-        } finally {
-            setLoading(false)
+            toast.error(error.message || "Error al preparar la venta");
+            setLoading(false);
         }
     }
 
