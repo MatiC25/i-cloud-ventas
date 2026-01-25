@@ -117,7 +117,7 @@ function NuevaVentaForm({ config }: { config: any }) {
         defaultValues: {
             cliente: { nombre: "", apellido: "", email: "", canal: "", contacto: "" },
             productos: [{ tipo: "", modelo: "", capacidad: "", color: "", estado: "Nuevo", imei: "", costo: "", precio: "", cantidad: 1, esParteDePago: false }],
-            pagos: [{ monto: "", divisa: "USD", tipoCambio: 1550, destino: "A confirmar" }],
+            pagos: [{ monto: "", divisa: "USD", tipoCambio: "", destino: "A confirmar" }],
             transaccion: { envioRetiro: "Retiro", comentarios: "", descargarComprobante: false },
             parteDePago: { esParteDePago: false, tipo: "", modelo: "", capacidad: "", costo: "" },
             trazabilidad: { idOperacion: "", fecha: new Date().toISOString(), usuario: "" },
