@@ -167,7 +167,7 @@ class VentaMapper {
 
             // Transacción
             envioRetiro: raw.transaccion.envioRetiro,
-            monto: montoVenta,
+            monto: Number(prod.precio),
             divisa: raw.transaccion.divisa,
             metodoPago: raw.transaccion.metodoPago || "",
 
@@ -182,7 +182,7 @@ class VentaMapper {
             tipoCambio: tipoCambio,
             conversion: conversion,
             costoProducto: costoProd,
-            profit: totalDolares - (costoProd * cantidad) > 0 ? totalDolares - (costoProd * cantidad) : prod.profit,
+            profit: ((Number(prod.precio) || 0) - costoProd) * cantidad,
             comentarios: raw.transaccion.comentarios,
 
             // Totales

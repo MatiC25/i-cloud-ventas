@@ -7,15 +7,21 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Combobox } from "@/components/ui/combobox";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, ShoppingBag, Smartphone } from "lucide-react";
+import { Plus, Trash2, ShoppingBag, Smartphone, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IFormConfig, IProductosConfig } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { MinimalInput, MinimalSelectTrigger, SectionHeader } from "./components";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface IDatosProductoProps {
     formConfig: IFormConfig
@@ -475,22 +481,13 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
                     />
                 </div>
 
-                {/* IMEI/Serial */}
+                {/* IMEI/Serial - Modal Scanner */}
                 <div className="col-span-6 md:col-span-3">
                     <FormField
                         control={control}
                         name={`productos.${index}.imei`}
                         render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider pl-1">IMEI / Serial (Opcional)</FormLabel>
-                                <FormControl>
-                                    <MinimalInput
-                                        className="h-[42px] text-xs font-mono"
-                                        placeholder="Escanear..."
-                                        {...field}
-                                    />
-                                </FormControl>
-                            </FormItem>
+                            <ImeiScannerField field={field} />
                         )}
                     />
                 </div>
@@ -551,4 +548,116 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
             </div>
         </div>
     )
+}
+
+// --- IMEI Scanner Modal Component ---
+interface ImeiScannerFieldProps {
+    field: {
+        value: string;
+        onChange: (value: string) => void;
+    };
+}
+
+function ImeiScannerField({ field }: ImeiScannerFieldProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [tempValue, setTempValue] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleOpen = () => {
+        setTempValue(field.value || "");
+        setIsOpen(true);
+    };
+
+    const handleConfirm = () => {
+        field.onChange(tempValue);
+        setIsOpen(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleConfirm();
+        }
+    };
+
+    // Auto-focus cuando se abre el modal
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            setTimeout(() => inputRef.current?.focus(), 100);
+        }
+    }, [isOpen]);
+
+    return (
+        <FormItem>
+            <FormLabel className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider pl-1">
+                IMEI / Serial (Opcional)
+            </FormLabel>
+            <FormControl>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleOpen}
+                    className={cn(
+                        "w-full h-[42px] justify-start text-left font-mono text-xs px-3",
+                        "border-border/40 hover:bg-muted/20 shadow-none",
+                        field.value
+                            ? "bg-blue-50 dark:bg-transparent dark:border-emerald-500/50"
+                            : "bg-transparent text-muted-foreground"
+                    )}
+                >
+                    <ScanLine className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">
+                        {field.value || "Escanear..."}
+                    </span>
+                </Button>
+            </FormControl>
+
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent
+                    className="sm:max-w-md"
+                    onPointerDownOutside={(e) => e.preventDefault()}
+                >
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <ScanLine className="w-5 h-5 text-primary" />
+                            Escanear IMEI / Serial
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <p className="text-sm text-muted-foreground">
+                            Escanea el código con la pistola o ingresa manualmente.
+                            Presiona <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Enter</kbd> para confirmar.
+                        </p>
+
+                        <MinimalInput
+                            ref={inputRef}
+                            value={tempValue}
+                            onChange={(e) => setTempValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="h-12 text-lg font-mono tracking-wider text-center"
+                            placeholder="Esperando escaneo..."
+                            autoComplete="off"
+                        />
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleConfirm}
+                            >
+                                Confirmar
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </FormItem>
+    );
 }

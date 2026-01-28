@@ -133,20 +133,38 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
                                 <FormField
                                     control={control}
                                     name={`pagos.${index}.tipoCambio`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider pl-1">Cotiz.</FormLabel>
-                                            <FormControl>
-                                                <MinimalInput
-                                                    type="number"
-                                                    placeholder="1550"
-                                                    className="tabular-nums h-[42px] py-2 shadow-none border-border/40 hover:border-border/60"
-                                                    {...field}
-                                                    onChange={(e) => field.onChange(Number(e.target.value))}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
+                                    render={({ field }) => {
+                                        const divisa = watch(`pagos.${index}.divisa`);
+                                        const noRequiereCotizacion = divisa === "USD" || divisa === "USDT";
+
+                                        return (
+                                            <FormItem>
+                                                <FormLabel className={cn(
+                                                    "text-[10px] uppercase font-bold tracking-wider pl-1",
+                                                    noRequiereCotizacion
+                                                        ? "text-muted-foreground/50"
+                                                        : "text-amber-600 dark:text-amber-400"
+                                                )}>
+                                                    Cotiz. {!noRequiereCotizacion && <span className="text-destructive">*</span>}
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <MinimalInput
+                                                        type="number"
+                                                        placeholder={noRequiereCotizacion ? "-" : "1550"}
+                                                        className={cn(
+                                                            "tabular-nums h-[42px] py-2 shadow-none border-border/40 hover:border-border/60",
+                                                            noRequiereCotizacion && "bg-muted/30 cursor-not-allowed opacity-50"
+                                                        )}
+                                                        disabled={noRequiereCotizacion}
+                                                        {...field}
+                                                        value={noRequiereCotizacion ? "" : field.value}
+                                                        onChange={(e) => field.onChange(Number(e.target.value))}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
                                 />
                             </div>
 

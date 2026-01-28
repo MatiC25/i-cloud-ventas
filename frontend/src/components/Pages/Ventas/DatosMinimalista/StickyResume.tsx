@@ -21,9 +21,29 @@ export function StickyResume({ loading }: { loading: boolean }) {
 
     const valorTradeIn = parteDePago?.esParteDePago ? Number(parteDePago.costo || 0) : 0
     const saldoACubrir = totalProductos - valorTradeIn
-    const totalAbonado = pagos.reduce((acc: number, curr: any) => {
-        return acc + Number(curr.monto || 0)
-    }, 0)
+
+    // Función auxiliar: convierte todos los pagos a USD
+    // Si es USD/USDT → suma directo; si es ARS → divide por tipoCambio
+    const calcularTotalEnUSD = (pagos: any[]): number => {
+        return pagos.reduce((acc: number, pago: any) => {
+            const monto = Number(pago.monto || 0);
+            const tipoCambio = Number(pago.tipoCambio || 0);
+            const divisa = pago.divisa || "USD";
+
+            if (divisa === "ARS" && tipoCambio > 0) {
+                // Convertir pesos a dólares
+                return acc + (monto / tipoCambio);
+            }
+
+            if (divisa === "EUROS" && tipoCambio > 0) {
+                return acc + (monto / tipoCambio);
+            }
+            // USD, USDT u otras divisas se suman directo
+            return acc + monto;
+        }, 0);
+    };
+
+    const totalAbonado = calcularTotalEnUSD(pagos);
 
     return (
         // El contenedor externo sigue igual

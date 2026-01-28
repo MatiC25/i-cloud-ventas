@@ -68,7 +68,20 @@ const pagoSchema = z.object({
     divisa: z.string().default("USD"),
     tipoCambio: z.coerce.number().default(0),
     destino: z.string().default("A confirmar"),
-})
+}).refine(
+    (data) => {
+        // Si la divisa NO es USD o USDT, tipoCambio debe ser mayor a 0
+        const requiereCotizacion = data.divisa !== "USD" && data.divisa !== "USDT";
+        if (requiereCotizacion) {
+            return data.tipoCambio > 0;
+        }
+        return true;
+    },
+    {
+        message: "La cotización es obligatoria para esta divisa",
+        path: ["tipoCambio"], // El error se mostrará en el campo tipoCambio
+    }
+)
 
 const formSchema = z.object({
     cliente: z.object({
