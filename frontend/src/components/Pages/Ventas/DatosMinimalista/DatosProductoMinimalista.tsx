@@ -562,6 +562,7 @@ function ImeiScannerField({ field }: ImeiScannerFieldProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [tempValue, setTempValue] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
+    const triggerButtonRef = useRef<HTMLButtonElement>(null);
 
     const handleOpen = () => {
         setTempValue(field.value || "");
@@ -571,6 +572,25 @@ function ImeiScannerField({ field }: ImeiScannerFieldProps) {
     const handleConfirm = () => {
         field.onChange(tempValue);
         setIsOpen(false);
+
+        // Después de cerrar el modal, buscar y enfocar el siguiente campo
+        setTimeout(() => {
+            if (triggerButtonRef.current) {
+                // Obtener todos los elementos focusables del formulario
+                const focusableSelector = 'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+                const form = triggerButtonRef.current.closest('form');
+
+                if (form) {
+                    const focusableElements = Array.from(form.querySelectorAll(focusableSelector)) as HTMLElement[];
+                    const currentIndex = focusableElements.indexOf(triggerButtonRef.current);
+
+                    // Enfocar el siguiente elemento (si existe)
+                    if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
+                        focusableElements[currentIndex + 1].focus();
+                    }
+                }
+            }
+        }, 100);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -594,6 +614,7 @@ function ImeiScannerField({ field }: ImeiScannerFieldProps) {
             </FormLabel>
             <FormControl>
                 <Button
+                    ref={triggerButtonRef}
                     type="button"
                     variant="outline"
                     onClick={handleOpen}
