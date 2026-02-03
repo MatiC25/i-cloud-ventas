@@ -10,9 +10,6 @@ class VentaService {
   static registrarVenta(payloadRaw) {
     try {
       // 1. Obtener ID de Transacción Único para toda la operación
-      /* DEBUG TEMPORAL - SI VES ESTE ERROR ES QUE EL CODIGO SI SE ACTUALIZO */
-      // throw new Error(`DEBUG: TipoVenta recibida: "${payloadRaw.tipoVenta}" - Hoja destino: "${payloadRaw.tipoVenta === 'Mayorista' ? SHEET.CLIENTES_MAYORISTAS : SHEET.CLIENTES_MINORISTAS}"`);
-
       const targetSheet = payloadRaw.tipoVenta === 'Mayorista' ? SHEET.CLIENTES_MAYORISTAS : SHEET.CLIENTES_MINORISTAS;
 
       // AUTO-CREACIÓN DE HOJA SI NO EXISTE
@@ -30,8 +27,8 @@ class VentaService {
       // Instanciamos el repo con la hoja correcta para guardar
       const repo = new VentaRepository(targetSheet);
 
-      // 2. Iterar sobre todos los productos (Ventas y Canjes)
-      // El payloadRaw.productos contiene el array unificado
+      // 2. Iterar sobre todos los productos (Ventas)
+      // El payloadRaw.productos contiene SOLO los productos vendidos (asumimos lógica reverted)
       const listaProductos = payloadRaw.productos || [];
 
       // Si por alguna razón no hay productos, intentamos usar el formato legacy o fallamos
@@ -39,27 +36,24 @@ class VentaService {
         throw new Error("No hay productos en la venta");
       }
 
+      // --- 3. PROCESAR PRODUCTOS VENDIDOS Y ASIGNAR TRADE-IN A CADA FILA ---
       listaProductos.forEach(prod => {
-        // Determinamos si es Venta o Canje
-        const isTradeIn = prod.esParteDePago === true;
-
-        // 3. Construir un payload individual simulando la estructura esperada por el Mapper
-        // Mantenemos Cliente y Transaccion comunes.
-        // Separamos Producto vs ParteDePago según el tipo.
+        // Construimos un payload individual.
+        // Ahora pasamos 'producto' (el vendido) Y 'parteDePago' (el trade-in global) juntos.
+        // De esta forma VentaMapper mapeará ambos en la MISMA fila.
         const singlePayload = {
           cliente: payloadRaw.cliente,
           transaccion: payloadRaw.transaccion,
-          // Si es canje, producto va vacío. Si es venta, va en producto.
-          producto: isTradeIn ? {} : prod,
-          parteDePago: isTradeIn ? { ...prod, esParteDePago: true } : { esParteDePago: false },
-          pagos: payloadRaw.pagos || [], // Pasamos los pagos para calcular totales
-          usuario: payloadRaw.usuario // Pasamos el usuario para auditoría
+          producto: prod,
+          parteDePago: payloadRaw.parteDePago, // Pasamos el trade-in global
+          pagos: payloadRaw.pagos || [],
+          usuario: payloadRaw.usuario
         };
 
-        // 4. Convertir a DTO usando el Master ID
+        // Convertir a DTO usando el Master ID
         const dtoInterno = VentaMapper.toDto(singlePayload, masterId);
 
-        // 5. Mapear a excel y guardar fila
+        // Mapear a excel y guardar fila
         const datosExcel = VentaMapper.toExcel(dtoInterno);
         repo.save(datosExcel);
       });
@@ -74,16 +68,15 @@ class VentaService {
       const headersLibro = GastosMapper.getHeadersPrincipal();
       const usuarioLogueado = payloadRaw.usuario || "Sistema";
 
-      // Primero, calculamos el valor total de dispositivos en parte de pago
-      const productosParteDePago = listaProductos.filter(p => p.esParteDePago === true);
-      const valorTotalParteDePago = productosParteDePago.reduce((sum, p) => {
-        // Usamos el precio del producto como valor del canje
-        return sum + (Number(p.precio) || 0);
-      }, 0);
+      // --- LOGICA DE PARTE DE PAGO (Trade In) ---
+      // Revisamos el objeto global parteDePago
+      const parteDePago = payloadRaw.parteDePago || {};
+      const esParteDePago = parteDePago.esParteDePago === true;
+      const valorTotalParteDePago = esParteDePago ? (Number(parteDePago.costo) || 0) : 0;
 
-      // Registrar cada dispositivo en parte de pago como "Compra Stock" en el Libro Diario
-      productosParteDePago.forEach(producto => {
-        const descripcionProducto = [producto.tipo, producto.modelo, producto.capacidad, producto.color]
+      if (esParteDePago) {
+        // Registrar DISPOSITIVO TOMADO en Libro Diario
+        const descripcionProducto = [parteDePago.tipo, parteDePago.modelo, parteDePago.capacidad, parteDePago.color]
           .filter(Boolean)
           .join(' ');
 
@@ -92,10 +85,10 @@ class VentaService {
           detalle: `Canje (Venta ID: ${masterId}): ${descripcionProducto}`,
           tipoMovimiento: "Compra Stock",
           categoriaMovimiento: "Parte de Pago",
-          monto: Number(producto.precio) || 0,
-          divisa: "USD", // Asumimos USD para canjes, o podría venir del producto
+          monto: valorTotalParteDePago,
+          divisa: "USD",
           destino: "Stock Valorizado",
-          comentarios: `Estado: ${producto.estado || 'N/A'} - IMEI: ${producto.imei || 'N/A'}`,
+          comentarios: `Estado: ${"Usado"} - IMEI: ${parteDePago.imei || 'N/A'}`,
           auditoria: usuarioLogueado,
           id: masterId
         };
@@ -103,7 +96,37 @@ class VentaService {
         const rowDataCanje = GastosMapper.toExcel(operacionCanje);
         const rowArrayCanje = headersLibro.map(h => rowDataCanje[h]);
         sheetLibro.appendRow(rowArrayCanje);
-      });
+
+        // --- IPONE USADOS LOG ---
+        try {
+          const SHEET_IPHONE_USADOS = "IPhone Usados";
+          let sheetUsados = ss.getSheetByName(SHEET_IPHONE_USADOS);
+
+          if (!sheetUsados) {
+            sheetUsados = ss.insertSheet(SHEET_IPHONE_USADOS);
+            const headersUsados = ["Fecha", "Tipo", "Modelo", "Capacidad", "Color", "Costo", "IMEI", "Batería", "Estado", "Origen"];
+            sheetUsados.appendRow(headersUsados);
+            sheetUsados.getRange(1, 1, 1, headersUsados.length).setFontWeight("bold");
+          }
+
+          const rowUsado = [
+            new Date(),
+            parteDePago.tipo || "",
+            parteDePago.modelo || "",
+            parteDePago.capacidad || "",
+            parteDePago.color || "",
+            valorTotalParteDePago,
+            parteDePago.imei || "",
+            parteDePago.bateria || "",
+            "Usado",
+            `Canje Venta #${masterId}`
+          ];
+
+          sheetUsados.appendRow(rowUsado);
+        } catch (errUsados) {
+          console.error("Error guardando en IPhone Usados:", errUsados);
+        }
+      }
 
       // Ahora registramos los pagos en efectivo/transferencia
       const pagos = payloadRaw.pagos || [];
@@ -114,13 +137,10 @@ class VentaService {
         : 'Sin Nombre';
 
       const descripcionProductos = listaProductos
-        .filter(p => !p.esParteDePago) // Solo productos vendidos, no canjes
         .map(p => [p.tipo, p.modelo, p.capacidad].filter(Boolean).join(' '))
         .join(', ') || 'Producto';
 
-      // Calculamos el monto efectivo a registrar (total pagos - valor canje ya está incluido en el precio)
-      // El monto de los pagos debería ser: Precio Total Venta - Valor Canje
-      // Los pagos representan el dinero real que entra, no incluyen el canje
+      // Calculamos el monto efectivo a registrar
       pagos.forEach(pago => {
         // Solo registramos si hay monto real
         if (Number(pago.monto) <= 0) return;

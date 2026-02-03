@@ -103,6 +103,9 @@ const formSchema = z.object({
         tipo: z.string().default(""),
         modelo: z.string().default(""),
         capacidad: z.string().default(""),
+        color: z.string().default(""),
+        imei: z.string().optional(),
+        bateria: z.string().optional(),
         costo: z.coerce.number().default(0),
     }),
     trazabilidad: z.object({
@@ -132,7 +135,7 @@ function NuevaVentaForm({ config }: { config: any }) {
             productos: [{ tipo: "", modelo: "", capacidad: "", color: "", estado: "Nuevo", imei: "", costo: "", precio: "", cantidad: 1, esParteDePago: false }],
             pagos: [{ monto: "", divisa: "USD", tipoCambio: "", destino: "A confirmar" }],
             transaccion: { envioRetiro: "Envio | Mensajeria", comentarios: "", descargarComprobante: false },
-            parteDePago: { esParteDePago: false, tipo: "", modelo: "", capacidad: "", costo: "" },
+            parteDePago: { esParteDePago: false, tipo: "", modelo: "", capacidad: "", color: "", imei: "", bateria: "", costo: "" },
             trazabilidad: { idOperacion: "", fecha: new Date().toISOString(), usuario: "" },
         },
     })
@@ -143,11 +146,14 @@ function NuevaVentaForm({ config }: { config: any }) {
         try {
             const pagoPrincipal = values.pagos[0] || { monto: 0, divisa: "USD", tipoCambio: 1500, destino: "A confirmar" };
 
+            // REVERTED: Do NOT merge parteDePago into productos. 
+            // The backend will handle mapping the trade-in info onto the sale row.
+
             const ventaFinal: any = {
                 usuario: user?.fullName || user?.primaryEmailAddress?.emailAddress || "Anónimo",
                 tipoVenta: saleType,
                 cliente: values.cliente,
-                productos: values.productos,
+                productos: values.productos, // Just the sold products
                 pagos: values.pagos,
                 transaccion: {
                     ...values.transaccion,
@@ -155,7 +161,7 @@ function NuevaVentaForm({ config }: { config: any }) {
                     divisa: pagoPrincipal.divisa,
                     tipoCambio: pagoPrincipal.tipoCambio
                 },
-                parteDePago: values.parteDePago,
+                parteDePago: values.parteDePago, // Trade-in info as transaction property
                 trazabilidad: values.trazabilidad,
             }
 
@@ -268,7 +274,7 @@ function NuevaVentaForm({ config }: { config: any }) {
                             </motion.div>
                             <Separator />
                             <motion.div className="p-8 space-y-10">
-                                <DatosPartePagoMinimalista />
+                                <DatosPartePagoMinimalista productosConfig={productosConfig} />
                                 <Separator className="border-dashed" />
                                 <DatosTransaccionMinimalista formConfig={formConfig} gastosConfig={gastosConfig} />
                             </motion.div>
