@@ -33,6 +33,17 @@ const getCategoryIcon = (category: string) => {
     return ShoppingBag;
 }
 
+// --- Helper de Normalización ---
+const normalizarLista = (valor: any): string[] => {
+    if (!valor) return [];
+    // Si ya es un array, lo limpiamos
+    if (Array.isArray(valor)) return valor.map(v => String(v).trim()).filter(Boolean);
+    // Si es un string, lo partimos y limpiamos
+    if (typeof valor === 'string') return valor.split(',').map(s => s.trim()).filter(Boolean);
+    // Fallback por si llega un número o boolean raro
+    return [String(valor).trim()];
+};
+
 export function DatosProductoMinimalista({ formConfig, productosConfig }: IDatosProductoProps) {
     const { control, watch, setValue } = useFormContext()
     const { fields, append, remove } = useFieldArray({
@@ -209,13 +220,11 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
 
     const capacidadesOptions = Array.from(new Set(
         productosConfig
-            // Filtramos por AMBOS campos
             .filter(p =>
                 (!tipoSeleccionado || p.categoria === tipoSeleccionado) &&
                 (!modeloSeleccionado || p.modelo === modeloSeleccionado)
             )
-            // Rompemos el string "256GB, 512GB" y aplanamos el array
-            .flatMap(p => p.variantes ? p.variantes.split(',').map(s => s.trim()) : [])
+            .flatMap(p => normalizarLista(p.variantes))
     )).filter(Boolean)
 
     const coloresOptions = Array.from(new Set(
@@ -224,7 +233,7 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
                 (!tipoSeleccionado || p.categoria === tipoSeleccionado) &&
                 (!modeloSeleccionado || p.modelo === modeloSeleccionado)
             )
-            .flatMap(p => p.colores ? p.colores.split(',').map(s => s.trim()) : [])
+            .flatMap(p => normalizarLista(p.colores))
     )).filter(Boolean)
 
     const estados = formConfig.estado || [];
@@ -245,8 +254,8 @@ function ProductForm({ index, formConfig, productosConfig, mode, control, watch,
         productosConfig.forEach(p => {
             // 1. CAMBIO CLAVE: Usamos las props en minúscula (normalizadas en el hook)
             // Separamos por coma y limpiamos espacios
-            const caps = p.variantes ? p.variantes.split(',').map(s => s.trim()).filter(Boolean) : [''];
-            const cols = p.colores ? p.colores.split(',').map(s => s.trim()).filter(Boolean) : [''];
+            const caps = normalizarLista(p.variantes);
+            const cols = normalizarLista(p.colores);
 
             const Icon = ShoppingBag; // Asegúrate de tener este import
 
@@ -682,3 +691,5 @@ function ImeiScannerField({ field }: ImeiScannerFieldProps) {
         </FormItem>
     );
 }
+
+
