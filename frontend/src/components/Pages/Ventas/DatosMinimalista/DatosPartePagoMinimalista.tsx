@@ -19,6 +19,16 @@ interface IDatosPartePagoProps {
     productosConfig?: any[]; // Array from backend
 }
 
+const normalizarLista = (valor: any): string[] => {
+    if (!valor) return [];
+    // Si ya es un array, lo limpiamos
+    if (Array.isArray(valor)) return valor.map(v => String(v).trim()).filter(Boolean);
+    // Si es un string, lo partimos y limpiamos
+    if (typeof valor === 'string') return valor.split(',').map(s => s.trim()).filter(Boolean);
+    // Fallback por si llega un número o boolean raro
+    return [String(valor).trim()];
+};
+
 export function DatosPartePagoMinimalista({ productosConfig = [] }: IDatosPartePagoProps) {
     const { control, watch, setValue } = useFormContext();
     const esParteDePago = watch("parteDePago.esParteDePago");
@@ -45,7 +55,7 @@ export function DatosPartePagoMinimalista({ productosConfig = [] }: IDatosParteP
                 (!modeloSeleccionado || p.modelo === modeloSeleccionado)
             )
             // Rompemos el string "256GB, 512GB" y aplanamos el array
-            .flatMap(p => p.variantes ? p.variantes.split(',').map((s: string) => s.trim()) : [])
+            .flatMap(p => normalizarLista(p.variantes))
     )).filter(Boolean);
 
     const coloresOptions = Array.from(new Set(
@@ -54,7 +64,7 @@ export function DatosPartePagoMinimalista({ productosConfig = [] }: IDatosParteP
                 (!tipoSeleccionado || p.categoria === tipoSeleccionado) &&
                 (!modeloSeleccionado || p.modelo === modeloSeleccionado)
             )
-            .flatMap(p => p.colores ? p.colores.split(',').map((s: string) => s.trim()) : [])
+            .flatMap(p => normalizarLista(p.variantes))
     )).filter(Boolean);
 
     // Reset dependents when parent changes
