@@ -222,7 +222,9 @@ export function DatosTransaccionMinimalista({ formConfig, gastosConfig }: IDatos
                                         { value: "Envio | Mensajeria", label: "Envio | Mensajeria" },
                                         { value: "Envío Personalizado", label: "Envío Personalizado" },
                                         { value: "Oficina Arg", label: "Oficina Argentina" },
-                                        { value: "Oficina Uy", label: "Oficina Uruguay" }
+                                        { value: "Oficina Uy", label: "Oficina Uruguay" },
+                                        { value: "Oficina Caballito", label: "Oficina Caballito" },
+                                        { value: "Oficina Belgrano", label: "Oficina Belgrano" },
                                     ]}
                                     value={field.value}
                                     onChange={field.onChange}
